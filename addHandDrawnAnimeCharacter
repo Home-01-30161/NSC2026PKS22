@@ -1,0 +1,224 @@
+# Website Prompt — Ink & Cream AI Assistant
+## Character-Driven Animated Website with Embedded AI
+
+---
+
+## Project Overview
+
+Build a **fully animated, single-page personal assistant website** centered around an original anime character — a hand-drawn Victorian/Lolita-style girl with long dark braided hair, ruffled blouse, suspender skirt with bow accents, and large expressive eyes. The character is rendered in **ink pen lineart style** (monochrome, hatching shading) on a cream notebook paper background. She acts as the site's AI assistant — speaking, reacting, and guiding the user.
+
+---
+
+## Character Reference (from provided image)
+
+The character must be reproduced faithfully as a **layered SVG or CSS illustration**, or as a **sprite sheet for animation**:
+
+- **Hair** — long dark hair, loosely braided over one shoulder, with side-swept bangs and a soft center part
+- **Eyes** — large anime-style eyes with detailed lashes and subtle highlights; slightly wide, curious expression
+- **Outfit** — sleeveless ruffled blouse with cascading ribbon/bow detail at center chest; wide suspender straps clipping onto a wide corset waistband; full pleated/gathered skirt flowing below
+- **Mole** — small ink dot below the left eye (character mark, do not omit)
+- **Art style** — monochrome ink pen lineart, cross-hatching for shadow, no fill color, hand-drawn quality
+
+> The character should be rendered large (40–50% of viewport height), anchored bottom-left or bottom-center of the screen, and feel like she is physically present on the page.
+
+---
+
+## Visual Theme
+
+**Name:** *Stationery Gothic*
+**Mood:** Warm, classical, handcrafted — a Victorian journal brought to life
+
+### Color Palette
+
+| Token | Hex | Usage |
+|---|---|---|
+| Paper Cream | `#F5F0E8` | Page background |
+| Aged Shadow | `#EDE8DC` | Cards, panels |
+| Sepia Ink | `#3B2A1A` | Primary text, lineart |
+| Faded Ink | `#7A5C44` | Secondary text |
+| Dusty Rose | `#C49A8A` | Accent — hover, active |
+| Sage | `#8FAF8A` | Status, success states |
+| Ruled Line | `#D9D0C0` | Notebook lines (40% opacity) |
+| Wax Red | `#9B3A3A` | Alerts, bow accents |
+
+### Typography
+
+- **Display / Headings** — *Playfair Display* (Google Fonts) — elegant serif, evokes vintage typesetting
+- **Body** — *Lora* (Google Fonts) — readable serif with warmth
+- **UI labels / small text** — *Crimson Pro* — refined and light
+- **Handwritten accents** — *Caveat* or *Satisfy* — for the character's dialogue, annotations, sticky notes
+- No sans-serif fonts anywhere except monospace for code snippets
+
+### Background Texture
+
+```css
+/* Notebook paper — horizontal ruled lines */
+background-image:
+  repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    #D9D0C0 27px,
+    #D9D0C0 28px
+  );
+background-color: #F5F0E8;
+
+/* Optional: faint left margin line */
+border-left: 2px solid #E8C4B8;
+margin-left: 60px;
+```
+
+Add a very subtle paper grain using an SVG `<feTurbulence>` filter at 3–5% opacity on the body layer.
+
+---
+
+## Page Layout
+
+```
+┌─────────────────────────────────────────────────┐
+│  [Logo/Title — handwritten stamp style]    [Nav] │
+│                                                  │
+│   ┌──────────────────────────────────────┐       │
+│   │                                      │       │
+│   │         HERO CONTENT AREA            │       │
+│   │    (greeting, tagline, CTA button)   │       │
+│   │                                      │       │
+│   └──────────────────────────────────────┘       │
+│                                                  │
+│  ┌──────────────────┐                            │
+│  │                  │   ← CHARACTER ANCHORED     │
+│  │   [SVG/Sprite]   │     bottom-left            │
+│  │    CHARACTER     │                            │
+│  │                  │   Speech bubble floats     │
+│  │                  │   to her upper-right       │
+│  └──────────────────┘                            │
+│                                                  │
+│  [Chat input bar — parchment style, full width]  │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## Animation System
+
+### Character Animations (CSS keyframes or GSAP)
+
+| Animation | Trigger | Description |
+|---|---|---|
+| **Idle breathe** | Always | Subtle vertical bob ±4px, 3s ease-in-out infinite |
+| **Blink** | Every 4–6s randomly | Eyes close → open over 200ms |
+| **Look left / right** | On user mouse position | Pupils shift ±3px tracking cursor |
+| **Bow greeting** | On page load | Character tilts forward 8° then returns, once |
+| **Happy bounce** | On user sends message | Quick upward jump +12px, spring back |
+| **Thinking** | While AI is responding | Character tilts head 5°, swaying loop |
+| **Wave** | On first visit / welcome | Right arm raises (if rendered as separate layer) |
+
+### Page Animations
+
+- **Page load** — staggered reveal: background lines draw in → character rises from below → speech bubble fades in → hero text types in with ink-bleed effect
+- **Scroll parallax** — notebook lines scroll slightly slower than content (depth effect)
+- **Hover states** — all buttons get a subtle ink-stamp press: `scale(0.97)` + sepia shadow
+- **Chat messages** — each message slides in from the appropriate side with a slight rotation (-1° to +1°) as if placed by hand
+- **Speech bubble** — typewriter effect for character dialogue; bubble has a hand-drawn wobbly border (SVG path, not perfect rectangle)
+
+---
+
+## AI Assistant Integration
+
+### Character Persona
+
+> Name: **Seraphine** (or user-defined)
+> Personality: Polite, slightly formal, warm — speaks as if writing in a letter. Uses phrases like *"If I may suggest…"*, *"How delightful!"*, *"Allow me to assist…"*
+> Never uses slang. Occasionally adds a small `—` em-dash pause for elegance.
+
+### System Prompt (for Anthropic API)
+
+```
+You are Seraphine, an AI assistant embodied as a Victorian/Lolita-style anime character.
+You are helpful, warm, and slightly formal — like a knowledgeable companion from a
+classic novel. Speak in complete sentences. Never use modern slang. Use em-dashes for
+dramatic pauses. Keep responses concise (2–4 sentences) unless the user asks for detail.
+Always end with a gentle offer to help further.
+```
+
+### API Integration
+
+```javascript
+const response = await fetch("https://api.anthropic.com/v1/messages", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1000,
+    system: SERAPHINE_SYSTEM_PROMPT,
+    messages: conversationHistory
+  })
+});
+```
+
+### Chat UI Components
+
+- **Speech bubble** — floats above/beside character; SVG path with hand-drawn irregular border; parchment fill `#FAF7F2`; text in *Caveat* font
+- **User input bar** — full-width at bottom; parchment style; placeholder: *"Write your question here…"*; send button is a wax seal stamp icon
+- **Chat history panel** — slides in from right as a "journal page"; messages styled as handwritten notes on ruled paper; user messages right-aligned with dusty rose tint
+- **Typing indicator** — three ink dots that appear and disappear (`.` → `..` → `...`) while Seraphine is "thinking"
+- **Character reacts** — trigger `thinking` animation while API call is pending; trigger `happy bounce` when response arrives
+
+---
+
+## Technical Stack
+
+```
+HTML5 + CSS3 + Vanilla JS     ← Preferred for portability
+  OR
+React + Framer Motion         ← If animation complexity demands it
+```
+
+### Required Libraries
+
+| Library | Purpose | CDN |
+|---|---|---|
+| GSAP | Character animation timeline | `cdnjs.cloudflare.com` |
+| Google Fonts | Playfair Display, Lora, Caveat | fonts.googleapis.com |
+| Anthropic API | AI responses | `api.anthropic.com/v1/messages` |
+
+### File Structure
+
+```
+/
+├── index.html
+├── style.css
+├── character/
+│   ├── seraphine-base.svg      ← Full character lineart
+│   ├── seraphine-blink.svg     ← Eyes-closed variant
+│   ├── seraphine-think.svg     ← Head-tilt variant
+├── js/
+│   ├── animation.js            ← Character animation controller
+│   ├── chat.js                 ← API integration + message rendering
+│   └── cursor-track.js         ← Eye-tracking mouse follow
+└── assets/
+    └── paper-grain.svg         ← Texture overlay
+```
+
+---
+
+## Key Moments to Get Right
+
+1. **The character must feel alive** — idle animation never stops; eyes always track cursor
+2. **Dialogue must feel handwritten** — use *Caveat* font in the speech bubble, not a sans-serif
+3. **Paper texture is essential** — ruled lines + grain give the whole site its soul
+4. **No harsh digital edges** — all borders are either dashed, slightly imperfect SVG paths, or have `border-radius` generous enough to feel soft
+5. **Sound (optional)** — a soft paper-rustle or pen-scratch sound on message send; a gentle chime when Seraphine responds
+
+---
+
+## Deliverable Checklist
+
+- [ ] Animated character SVG on page (idle + react states)
+- [ ] Notebook paper background with ruled lines
+- [ ] Speech bubble with typewriter text effect
+- [ ] Working AI chat via Anthropic API
+- [ ] Chat history as journal-style panel
+- [ ] Page load animation sequence
+- [ ] Cursor-tracking eyes
+- [ ] Mobile responsive (character scales down, sits bottom-center)
+- [ ] All typography from Google Fonts — no system fonts

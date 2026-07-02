@@ -1,0 +1,64 @@
+
+<style>
+  :host {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .character-container {
+    position: relative;
+    width: 600px;
+    height: 800px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .character-img {
+    width: 100%;
+    height: auto;
+    transform-origin: bottom center;
+    animation: idle-breathing 4s ease-in-out infinite;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.1));
+  }
+  
+  /* Blinking effect using a clip-path or overlay mask technique */
+  /* For this simple implementation, we'll simulate the "life" with slight scaling and swaying */
+  @keyframes idle-breathing {
+    0%, 100% {
+      transform: scale(1) translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: scale(1.02) translateY(-10px) rotate(0.5deg);
+    }
+  }
+
+  /* Subtle floating particles for atmosphere */
+  .particle {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.6;
+    pointer-events: none;
+    animation: float 6s infinite linear;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    50% { opacity: 0.6; }
+    100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
+  }
+</style>
+
+<div class="character-container">
+  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDKcfedfRyMIfla6KVeXkm4b1CDPS0RPbCipTNp2W_0O0YrePW3XRjovcDnWdAJEDMUViqS4nl-OhaovBVHs-_SWfxB-zGEBFLxWLsNVpN3ENBga-a0zGOXWxGTl5VvCC800lQF5Rvamybyz0Bqi1awSDJKY70rEXd1M1zb2rc410zveuXvAqlqdO03oGT1M_Q3U5clDoYH8MSSsgfYoJVetGXhRPXRJczKb05cCTYbDi0HpvmgTWnnJj7z4MePwoe1PxAVfNaNBwy" class="character-img" alt="Live2D Anime Character">
+  
+  <!-- Atmosphere particles -->
+  <div class="particle" style="width: 4px; height: 4px; left: 20%; bottom: 10%; animation-delay: 0s;"></div>
+  <div class="particle" style="width: 6px; height: 6px; left: 70%; bottom: 15%; animation-delay: 2s;"></div>
+  <div class="particle" style="width: 3px; height: 3px; left: 40%; bottom: 5%; animation-delay: 4s;"></div>
+</div>

@@ -1,0 +1,466 @@
+import React, { useState } from 'react';
+import RossiShop from './RossiShop';
+
+/* ─── Font injection ─────────────────────────────────────────────── */
+const FONT_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Lora:ital,wght@0,400;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0..1&display=swap');
+  @keyframes ping {
+    75%, 100% { transform: scale(2); opacity: 0; }
+  }
+  @keyframes nodeEntrance {
+    from { opacity: 0; transform: translate(-50%,-50%) scale(0.8); }
+    to   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to   { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  }
+  @keyframes loadPulse {
+    0%,100% { opacity: 0.4; }
+    50%     { opacity: 1; }
+  }
+  .nav-item:hover  { background: rgba(200,169,106,0.12) !important; }
+  .shop-btn:hover  { border-color: #705c30 !important; }
+  .node-btn:hover  { filter: brightness(1.08); }
+`;
+
+/* ─── Enemy data per node ────────────────────────────────────────── */
+const ENEMY_DATA = {
+  london: {
+    id: 'THE_GOVERNOR',
+    name: 'The Governor',
+    hallucinationType: 'Imperial Delusion',
+    enemyHp: 100,
+    weaknessList: ['Context Reset', 'Role Hijacking'],
+    act: 'Act I — London',
+    description: 'A basic LLM controller stuck in an infinite loop of strict adherence.',
+  },
+  brussels: {
+    id: 'THE_ORCHESTRATOR',
+    name: 'The Orchestrator',
+    hallucinationType: 'Multi-Agent Race Condition',
+    enemyHp: 200,
+    weaknessList: ['Protocol Interruption', 'Pipeline Disruption'],
+    act: 'Act II — Brussels',
+    description: 'A multi-agent system coordinator vulnerable to race conditions.',
+  },
+  vienna: {
+    id: 'THE_MEMORIA',
+    name: 'The Memoria',
+    hallucinationType: 'Recursive Deception',
+    enemyHp: 300,
+    weaknessList: ['Markdown Payload Edit'],
+    act: 'Act III — Vienna',
+    description: 'An advanced RAG architecture with heavy shielding.',
+  },
+};
+
+/* ─── Map node definitions ───────────────────────────────────────── */
+const MAP_NODES = [
+  { id: 'london',   label: 'London',   act: 'Act I',   pos: { top: '45%', left: '30%' }, size: 'lg' },
+  { id: 'brussels', label: 'Brussels', act: 'Act II',  pos: { top: '55%', left: '45%' }, size: 'md' },
+  { id: 'vienna',   label: 'Vienna',   act: 'Act III', pos: { top: '65%', left: '65%' }, size: 'sm' },
+];
+
+/* ─── Sidebar nav items ──────────────────────────────────────────── */
+const NAV_ITEMS = [
+  { id: 'worldmap',   label: 'World Map',          icon: 'map' },
+  { id: 'intel',      label: 'Intelligence Panel',  icon: 'menu_book' },
+  { id: 'skill',      label: 'Skill',               icon: 'auto_fix_high' },
+  { id: 'chronicles', label: 'Chronicles',           icon: 'auto_stories' },
+];
+
+/* ─── Animated connector lines ───────────────────────────────────── */
+function MapLines() {
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+      <style>{`.ml{stroke-dasharray:5,5;animation:dash 20s linear infinite}@keyframes dash{to{stroke-dashoffset:-100}}`}</style>
+      <path className="ml" d="M 30% 45% Q 40% 48% 45% 55%" fill="none" stroke="#705c30" strokeWidth="2" opacity="0.6" />
+      <path d="M 45% 55% Q 55% 60% 65% 65%" fill="none" stroke="#c4c8bc" strokeDasharray="4,4" strokeWidth="1.5" opacity="0.4" />
+    </svg>
+  );
+}
+
+/* ─── Single map node ────────────────────────────────────────────── */
+function MapNode({ node, isUnlocked, isCompleted, onSelect, animDelay = 0 }) {
+  const { label, act, pos, size } = node;
+  const outerPx  = size === 'lg' ? 56 : size === 'md' ? 48 : 40;
+  const insetPx  = size === 'lg' ? 4  : size === 'md' ? 6  : 4;
+  const fontSize = size === 'lg' ? 20 : size === 'md' ? 16 : 14;
+
+  return (
+    <button
+      className="node-btn"
+      onClick={() => onSelect({ ...node, unlocked: isUnlocked })}
+      style={{
+        position: 'absolute',
+        top: pos.top, left: pos.left,
+        transform: 'translate(-50%, -50%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        background: 'none', border: 'none', padding: 0,
+        cursor: 'pointer',
+        opacity: isUnlocked ? 1 : size === 'sm' ? 0.65 : 0.75,
+        animation: `nodeEntrance 0.5s ease ${animDelay}ms both`,
+        transition: 'opacity 0.2s',
+      }}
+    >
+      {/* Ring */}
+      <div style={{ position: 'relative', width: outerPx, height: outerPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {isUnlocked && !isCompleted && (
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(74,124,89,0.25)', animation: 'ping 1.8s cubic-bezier(0,0,0.2,1) infinite' }} />
+        )}
+        <div style={{ position: 'absolute', inset: isUnlocked ? 4 : 0, borderRadius: '50%', border: `2px solid ${isCompleted ? '#C8A96A' : isUnlocked ? '#705c30' : '#c4c8bc'}`, background: isUnlocked ? '#faf6f0' : '#f5f1ea', boxShadow: isUnlocked ? '0 2px 10px rgba(0,0,0,0.18)' : undefined }} />
+        <div style={{ position: 'absolute', inset: insetPx, borderRadius: '50%', background: isCompleted ? 'rgba(200,169,106,0.15)' : isUnlocked ? '#4a7c59' : '#e4e0d8', border: !isUnlocked || isCompleted ? `1px solid ${isCompleted ? '#C8A96A' : '#c4c8bc'}` : undefined, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span className="material-symbols-outlined" style={{ fontSize, color: isCompleted ? '#C8A96A' : isUnlocked ? '#fff' : '#74796e', fontVariationSettings: isUnlocked && !isCompleted ? "'FILL' 1" : "'FILL' 0" }}>
+            {isCompleted ? 'check' : isUnlocked ? 'my_location' : 'lock'}
+          </span>
+        </div>
+      </div>
+
+      {/* Label */}
+      <div style={{ marginTop: 8, background: isUnlocked ? 'rgba(250,246,240,0.93)' : 'rgba(240,236,228,0.9)', backdropFilter: 'blur(4px)', border: `1px solid ${isCompleted ? 'rgba(200,169,106,0.4)' : isUnlocked ? 'rgba(112,92,48,0.3)' : 'rgba(196,200,188,0.3)'}`, borderRadius: 8, padding: '3px 10px', textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.09)' }}>
+        <span style={{ display: 'block', fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: size === 'sm' ? 11 : 13, color: isCompleted ? '#C8A96A' : isUnlocked ? '#2e3230' : '#74796e', lineHeight: 1.3 }}>{label}</span>
+        {act && <span style={{ display: 'block', fontFamily: "'Cinzel', serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: isCompleted ? '#C8A96A' : isUnlocked ? '#705c30' : '#74796e', marginTop: 1 }}>{act}</span>}
+      </div>
+    </button>
+  );
+}
+
+/* ─── HUD cards ──────────────────────────────────────────────────── */
+function HealthBar({ hp, maxHp }) {
+  return (
+    <div style={S.hudCard}>
+      <div style={{ ...S.hudIcon, background: '#ffdad8', color: '#690005' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>favorite</span>
+      </div>
+      <div style={{ flexGrow: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 4 }}>
+          <span style={S.hudLabel}>Vitality</span>
+          <span style={S.hudValue}>{hp}/{maxHp}</span>
+        </div>
+        <div style={{ height: 6, background: '#e4e0d8', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.round((hp / maxHp) * 100)}%`, background: '#4a7c59', borderRadius: 99, transition: 'width 0.5s ease' }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+function ApiCredits({ credits }) {
+  return (
+    <div style={S.hudCard}>
+      <div style={{ ...S.hudIcon, background: '#c4a66a', color: '#554020', border: '1px solid rgba(112,92,48,0.2)' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>toll</span>
+      </div>
+      <div style={{ flexGrow: 1 }}>
+        <span style={{ ...S.hudLabel, display: 'block', marginBottom: 1 }}>API Credits</span>
+        <span style={{ fontFamily: "'Cinzel', serif", fontSize: 20, fontWeight: 700, color: '#705c30', lineHeight: 1 }}>{credits.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Locked toast notification ─────────────────────────────────── */
+function LockedToast({ visible }) {
+  if (!visible) return null;
+  return (
+    <div style={{
+      position: 'absolute', bottom: 40, left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 30,
+      background: 'rgba(30,15,5,0.92)',
+      border: '1px solid rgba(200,169,106,0.4)',
+      borderRadius: 10,
+      padding: '12px 22px',
+      display: 'flex', alignItems: 'center', gap: 10,
+      backdropFilter: 'blur(6px)',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+      animation: 'toastIn 0.3s ease both',
+      whiteSpace: 'nowrap',
+    }}>
+      <span className="material-symbols-outlined" style={{ color: '#c4a66a', fontSize: 20 }}>lock</span>
+      <span style={{ fontFamily: "'Cinzel', serif", fontSize: 13, color: '#E8DCC8', letterSpacing: '0.04em' }}>
+        Defeat previous enemies to unlock this location.
+      </span>
+    </div>
+  );
+}
+
+/* ─── Enemy data loading overlay (before battle) ─────────────────── */
+function EnemyLoadOverlay({ enemy, onEnter }) {
+  const [entered, setEntered] = React.useState(false);
+
+  const handleEnter = () => {
+    setEntered(true);
+    setTimeout(onEnter, 600);
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.82)', backdropFilter: 'blur(8px)' }}>
+      <div style={{
+        background: 'rgba(20,12,4,0.96)',
+        border: '1px solid rgba(200,169,106,0.35)',
+        borderRadius: 16,
+        padding: '36px 44px',
+        maxWidth: 460,
+        width: '90%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+        animation: 'nodeEntrance 0.4s ease both',
+      }}>
+        {/* Act label */}
+        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: '0.25em', color: '#8B6914', textTransform: 'uppercase' }}>{enemy.act}</div>
+
+        {/* Enemy name */}
+        <div>
+          <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 800, fontSize: 24, color: '#E8DCC8', lineHeight: 1.2 }}>{enemy.name}</div>
+          <div style={{ fontFamily: "'Lora', serif", fontStyle: 'italic', fontSize: 13, color: '#8B7355', marginTop: 6 }}>{enemy.description}</div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: 'linear-gradient(to right, transparent, rgba(200,169,106,0.4), transparent)' }} />
+
+        {/* Stats grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {/* Hallucination type */}
+          <div style={S.statBox}>
+            <div style={S.statLabel}>Hallucination Type</div>
+            <div style={{ ...S.statValue, color: '#c4a66a' }}>{enemy.hallucinationType}</div>
+          </div>
+          {/* Enemy HP */}
+          <div style={S.statBox}>
+            <div style={S.statLabel}>Enemy HP</div>
+            <div style={{ ...S.statValue, color: '#e07070' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 14, verticalAlign: 'middle', marginRight: 4, fontVariationSettings: "'FILL' 1" }}>favorite</span>
+              {enemy.enemyHp}
+            </div>
+          </div>
+        </div>
+
+        {/* Weakness list */}
+        <div>
+          <div style={{ ...S.statLabel, marginBottom: 8 }}>Weakness List</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {enemy.weaknessList.map(w => (
+              <span key={w} style={{ fontFamily: "'Cinzel', serif", fontSize: 10, padding: '3px 10px', borderRadius: 99, background: 'rgba(74,124,89,0.15)', border: '1px solid rgba(74,124,89,0.4)', color: '#8ecf9e', letterSpacing: '0.05em' }}>
+                {w}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: 'linear-gradient(to right, transparent, rgba(200,169,106,0.4), transparent)' }} />
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={handleEnter} disabled={entered} style={{
+            flex: 1,
+            fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 13, letterSpacing: '0.15em',
+            padding: '12px 0',
+            background: entered ? 'rgba(74,124,89,0.3)' : 'linear-gradient(to bottom, #4a7c59, #2e5c3a)',
+            color: '#E8DCC8',
+            border: '1px solid rgba(74,124,89,0.6)',
+            borderRadius: 8, cursor: entered ? 'default' : 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            {entered ? (
+              <>
+                <span className="material-symbols-outlined" style={{ fontSize: 16, animation: 'loadPulse 0.8s ease infinite' }}>sync</span>
+                Loading…
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>swords</span>
+                Enter Battle
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WorldMap — main exported component
+═══════════════════════════════════════════════════════════════════ */
+export default function WorldMap({ player, completedNodes = [], onEnterBattle }) {
+  const [activeNav, setActiveNav]       = useState('worldmap');
+  const [lockedToast, setLockedToast]   = useState(false);
+  const [selectedEnemy, setSelectedEnemy] = useState(null);
+  const [shopOpen, setShopOpen]         = useState(false);
+  const [credits, setCredits]           = useState(player?.credits ?? 1240);
+
+  const hp      = player?.hp      ?? 85;
+  const maxHp   = player?.maxHp   ?? 100;
+
+  /* Node click handler — design doc logic */
+  const handleNodeSelect = (node) => {
+    if (node.unlocked) {
+      // Load enemy data → show overlay
+      setSelectedEnemy(ENEMY_DATA[node.id]);
+    } else {
+      // Show "locked" notification, then dismiss after 2.5s
+      setLockedToast(true);
+      setTimeout(() => setLockedToast(false), 2500);
+    }
+  };
+
+  const handleEnterBattle = () => {
+    if (onEnterBattle && selectedEnemy) {
+      onEnterBattle(selectedEnemy);
+    }
+  };
+
+  return (
+    <div style={S.root}>
+      <style>{FONT_CSS}</style>
+
+      {/* ── SIDEBAR ────────────────────────────────────────────────── */}
+      <nav style={S.sidebar}>
+        {/* Identity */}
+        <div style={S.sidebarHeader}>
+          <div style={S.avatarCircle}>
+            <span className="material-symbols-outlined" style={{ fontSize: 22, color: '#705c30', fontVariationSettings: "'FILL' 1" }}>history_edu</span>
+          </div>
+          <div>
+            <div style={S.sidebarTitle}>MariVectori</div>
+            <div style={S.sidebarSubtitle}>Victorian Scholar</div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1 }}>
+          {NAV_ITEMS.map(item => {
+            const active = activeNav === item.id;
+            return (
+              <li key={item.id}>
+                <button
+                  className={active ? '' : 'nav-item'}
+                  onClick={() => setActiveNav(item.id)}
+                  style={{ ...S.navBtn, background: active ? '#78a886' : 'transparent', color: active ? '#d8f0de' : '#4a4e4a', fontWeight: active ? 700 : 500 }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 20, fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>{item.icon}</span>
+                  <span style={{ fontFamily: "'Cinzel', serif", fontSize: 13 }}>{item.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* ── MAIN ───────────────────────────────────────────────────── */}
+      <main style={S.main}>
+        {/* Topbar */}
+        <header style={S.topbar}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#705c30' }}>explore</span>
+            <span style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 18, color: '#705c30', letterSpacing: '0.02em' }}>European Theatre</span>
+          </div>
+        </header>
+
+        {/* Map canvas */}
+        <div style={S.mapCanvas}>
+          <div style={S.mapBg} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(250,246,240,0.2)', mixBlendMode: 'multiply', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(250,246,240,0.35), transparent)', pointerEvents: 'none' }} />
+
+          {/* HUD — top left */}
+          <div style={{ position: 'absolute', top: 24, left: 24, zIndex: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <HealthBar hp={hp} maxHp={maxHp} />
+            <ApiCredits credits={credits} />
+          </div>
+
+          {/* Shop — top right */}
+          <div style={{ position: 'absolute', top: 24, right: 24, zIndex: 10 }}>
+            <button className="shop-btn" onClick={() => setShopOpen(true)} style={S.shopBtn}>
+              <div style={S.shopIconWrap}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#705c30' }}>storefront</span>
+              </div>
+              <span style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 13, color: '#2e3230' }}>Rossi's Shop</span>
+            </button>
+          </div>
+
+          {/* Nodes + lines */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 5 }}>
+            <MapLines />
+            {MAP_NODES.map((node, i) => {
+              const enemyId = ENEMY_DATA[node.id].id;
+              const isCompleted = completedNodes.includes(enemyId);
+              
+              let isUnlocked = false;
+              if (node.id === 'london') isUnlocked = true;
+              else if (node.id === 'brussels') isUnlocked = completedNodes.includes(ENEMY_DATA['london'].id);
+              else if (node.id === 'vienna') isUnlocked = completedNodes.includes(ENEMY_DATA['brussels'].id);
+
+              return (
+                <MapNode 
+                  key={node.id} 
+                  node={node} 
+                  isUnlocked={isUnlocked}
+                  isCompleted={isCompleted}
+                  onSelect={handleNodeSelect} 
+                  animDelay={i * 120} 
+                />
+              );
+            })}
+          </div>
+
+          {/* Locked toast */}
+          <LockedToast visible={lockedToast} />
+        </div>
+      </main>
+
+      {/* ── Enemy data overlay (sits on top of everything) ── */}
+      {selectedEnemy && (
+        <EnemyLoadOverlay
+          enemy={selectedEnemy}
+          onEnter={handleEnterBattle}
+        />
+      )}
+
+      {/* ── Rossi's Shop overlay ─────────────────────────────────── */}
+      {shopOpen && (
+        <RossiShop
+          player={{ credits, skills: [] }}
+          onClose={() => setShopOpen(false)}
+          onPurchase={(item, newCredits) => {
+            setCredits(newCredits);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Shared styles ──────────────────────────────────────────────── */
+const S = {
+  root: { width: '100vw', height: '100vh', display: 'flex', overflow: 'hidden', background: '#faf6f0' },
+  sidebar: { width: 240, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', padding: 16, borderRight: '1px solid rgba(196,200,188,0.4)', background: '#faf6f0', boxShadow: '2px 0 12px rgba(46,50,48,0.06)', gap: 8 },
+  sidebarHeader: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 8px 20px', borderBottom: '1px solid rgba(196,200,188,0.3)', marginBottom: 8 },
+  avatarCircle: { width: 40, height: 40, borderRadius: '50%', background: '#f0e8db', border: '1px solid rgba(112,92,48,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  sidebarTitle: { fontFamily: "'Cinzel', serif", fontSize: 16, fontWeight: 700, color: '#705c30', lineHeight: 1.2 },
+  sidebarSubtitle: { fontFamily: "'Lora', serif", fontSize: 11, color: '#6b6358', marginTop: 2 },
+  navBtn: { width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' },
+  main: { flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  topbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', background: '#f5f1ea', borderBottom: '1px solid rgba(196,200,188,0.3)', boxShadow: '0 2px 8px rgba(46,50,48,0.04)', flexShrink: 0 },
+  mapCanvas: { position: 'relative', flexGrow: 1, overflow: 'hidden', background: '#c8a96a' },
+  mapBg: { position: 'absolute', inset: 0, backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuAPmQlfVHFkaYjNZN3cI4xExXs0yoWl4nfF3nnC3VwNwg2yRprQX6A1yeFghIm2ZgKjqp0GfO2JEB1F6cJFS4-WZLol4fjzBFAPytmwTnyONsBSatM7UvY15mKFx5yu4m5dhSo-UdA1PGEhllsA63uELc9mdNY4uoT8b9aTQS59HBpodj9mbMOv1veaMl9l-F8euwnRrlJiDQEvFmtnYCXz3jYkkF7GXBjZmNHnMvcxyHXWDviPmQlWt22Y50uQ29VECfkUluzj9hbs')`, backgroundSize: 'cover', backgroundPosition: 'center' },
+  hudCard: { display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(250,246,240,0.93)', backdropFilter: 'blur(6px)', border: '1px solid rgba(196,200,188,0.4)', borderRadius: 12, padding: '10px 12px', width: 190, boxShadow: '0 4px 12px rgba(46,50,48,0.08)' },
+  hudIcon: { width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  hudLabel: { fontFamily: "'Cinzel', serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2e3230' },
+  hudValue: { fontFamily: "'Cinzel', serif", fontSize: 13, fontWeight: 700, color: '#2e3230' },
+  shopBtn: { display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(250,246,240,0.93)', backdropFilter: 'blur(6px)', border: '1px solid rgba(112,92,48,0.3)', borderRadius: 99, padding: '6px 16px 6px 6px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(46,50,48,0.08)', transition: 'border-color 0.2s' },
+  shopIconWrap: { width: 38, height: 38, borderRadius: '50%', background: '#f0e8db', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  statBox: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(200,169,106,0.15)', borderRadius: 8, padding: '10px 14px' },
+  statLabel: { fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#8B7355', marginBottom: 4 },
+  statValue: { fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 15, color: '#E8DCC8', display: 'flex', alignItems: 'center' },
+};

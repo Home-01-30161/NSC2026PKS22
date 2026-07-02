@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+/* ─── Ink & Cream Design Tokens ─────────────────────────────────────── */
+:root {
+  --cream-bg:       #F5F0E8;
+  --cream-sidebar:  #EDE8DC;
+  --cream-card:     #FAF7F2;
+  --cream-border:   #C9BBA8;
+  --cream-divider:  #8B7355;
+  --ink-dark:       #5C3D2E;
+  --ink-rose:       #B07B6E;
+  --ink-tan:        #8B7355;
+  --text-primary:   #2C1A0E;
+  --text-secondary: #7A5C44;
+  --status-green:   #7A9E7E;
+  --status-pill-bg: #D4E6D4;
+  --status-pill-fg: #3A5C3A;
+}
+
+/* ─── Base Reset ────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Lora', Georgia, serif;
+  background-color: var(--cream-bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Paper Grain Background ────────────────────────────────────────── */
+.paper-bg {
+  background-color: var(--cream-bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* ─── Ruled Notebook Lines (sidebar) ───────────────────────────────── */
+.ruled-lines {
+  background-color: var(--cream-sidebar);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 23px,
+    rgba(180, 165, 140, 0.35) 23px,
+    rgba(180, 165, 140, 0.35) 24px
+  );
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 115, 85, 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(92, 61, 46, 0.6);
+}
+
+/* ─── Serif Headings ────────────────────────────────────────────────── */
+.font-serif-display { font-family: 'Playfair Display', Georgia, serif; }
+.font-hand          { font-family: 'Caveat', cursive; }
+.font-body          { font-family: 'Lora', Georgia, serif; }
+
+/* ─── Ribbon / Bookmark Accent ──────────────────────────────────────── */
+.ribbon-active {
+  border-left: 4px solid var(--ink-rose);
+  background-color: rgba(176, 123, 110, 0.08);
+}
+
+/* ─── Wax Seal Status ───────────────────────────────────────────────── */
+.wax-seal {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--status-green);
+  border: 1.5px solid rgba(58, 92, 58, 0.4);
+  box-shadow: 0 0 0 2px rgba(122, 158, 126, 0.2);
+}
+.wax-seal::after {
+  content: '';
+  display: block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  margin: 2px auto 0;
+}
+
+/* ─── Ink Divider ────────────────────────────────────────────────────── */
+.ink-divider {
+  border: none;
+  border-bottom: 1px dashed var(--ink-divider);
+  opacity: 0.6;
+  margin: 0;
+}
+
+/* ─── Ribbon Button ─────────────────────────────────────────────────── */
+.btn-ribbon {
+  background: var(--ink-dark);
+  color: var(--cream-bg);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Lora', serif;
+  letter-spacing: 0.03em;
+  padding: 6px 14px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-ribbon:hover  { background: #4A2E1E; transform: translateY(-1px); }
+.btn-ribbon:active { transform: translateY(0); }
+.btn-ribbon:disabled {
+  background: var(--cream-border);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── Ink Textarea ──────────────────────────────────────────────────── */
+.ink-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--cream-border);
+  border-radius: 0;
+  font-family: 'Lora', serif;
+  font-size: 15px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  width: 100%;
+}
+.ink-input::placeholder { color: var(--text-secondary); opacity: 0.7; font-style: italic; }
+.ink-input:focus        { border-bottom-color: var(--ink-rose); }
+
+/* ─── Message Bubble — assistant ─────────────────────────────────────── */
+.msg-assistant {
+  background: var(--cream-card);
+  border-bottom: 1px dashed rgba(139,115,85,0.3);
+}
+
+/* ─── Streaming cursor ──────────────────────────────────────────────── */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor-blink {
+  display: inline-block;
+  width: 2px; height: 1em;
+  background: var(--ink-rose);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+/* ─── Bounce dots ───────────────────────────────────────────────────── */
+@keyframes inkBounce {
+  0%,80%,100% { transform: translateY(0); }
+  40%         { transform: translateY(-5px); }
+}
+.ink-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--ink-rose);
+  animation: inkBounce 1.2s ease-in-out infinite;
+}
+
+/* ─── Sidebar label ─────────────────────────────────────────────────── */
+.sidebar-label {
+  font-family: 'Caveat', cursive;
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ─── Version footnote ──────────────────────────────────────────────── */
+.version-note {
+  font-size: 11px;
+  font-style: italic;
+  font-family: 'Caveat', cursive;
+  color: var(--text-secondary);
+}

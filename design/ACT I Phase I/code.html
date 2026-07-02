@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Combat Scene: Act I Phase I — Breaking the Loop</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Nunito+Sans:opsz,wght@6..12,300;400;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  /* ============================================================
+     RESET & BASE
+  ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-dark:        #0e0d0b;
+    --bg-panel:       rgba(14, 13, 11, 0.88);
+    --bg-panel-light: rgba(30, 27, 22, 0.92);
+    --border-gold:    rgba(190, 155, 90, 0.35);
+    --border-gold-bright: rgba(210, 175, 110, 0.7);
+    --gold:           #c8a96e;
+    --gold-bright:    #e0c080;
+    --green:          #4a8c5c;
+    --green-bright:   #60b878;
+    --green-bar:      #52a86a;
+    --orange:         #c47a30;
+    --orange-bar:     #d4883a;
+    --red:            #c04040;
+    --red-bar:        #d05050;
+    --red-hp:         #e05050;
+    --blue-accent:    #4a80b0;
+    --text-main:      #e8dfc8;
+    --text-dim:       #9a9080;
+    --text-gold:      #c8a96e;
+    --text-label:     #7a7060;
+    --shadow-glow:    rgba(200, 169, 110, 0.15);
+    --font-head:      'Cinzel', serif;
+    --font-body:      'Nunito Sans', sans-serif;
+    --font-ui:        'Rajdhani', sans-serif;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-body);
+  }
+
+  /* ============================================================
+     SCENE WRAPPER
+  ============================================================ */
+  .scene {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 320px 1fr 340px;
+    grid-template-rows: 56px 1fr 130px;
+    grid-template-areas:
+      "map-btn  phase-title  ."
+      "left-col center-col   right-col"
+      "left-col battle-log   right-col";
+    overflow: hidden;
+  }
+
+  /* ---- Background ---- */
+  .bg-layer {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 70% at 50% 100%, rgba(60,45,20,0.6) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(25,20,12,0.4) 0%, transparent 80%),
+      url('https://lh3.googleusercontent.com/aida-public/AB6AXuAkZtzxxigKWiA03GQhy_4QZsTInKbnTDM1LDFa_I-j_FYcNGapnyboVXrh_CMbG5kSsN60qMdS6fyLVkXgfi6sdTrTs7Hrml5bgizt4B-fm5VLZb6tzJQI6uq2fyPn0a0n5L6lNU9M-rAe7md0iXOJmAsEC2mtEGmHz9AuFSkw9loV6Sn5k4oRdkcCR10_vlPGw4WGiIcKG6WkdEtuRwp-9M7kT3OQJq57V5Lg5ZUm9bKRQrfI_AFWaiYlLZ7HWotiWkp-3HSaQeSL') center/cover no-repeat;
+    filter: brightness(0.3) saturate(0.7);
+  }
+  /* Vignette */
+  .bg-layer::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 40%, rgba(0,0,0,0.75) 100%);
+  }
+
+  /* Everything in scene should be above bg */
+  .scene > * { position: relative; z-index: 1; }
+
+  /* ============================================================
+     TOP BAR
+  ============================================================ */
+  .map-btn {
+    grid-area: map-btn;
+    display: flex; align-items: center;
+    padding: 10px 16px;
+  }
+
+  .map-btn button {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(20,18,12,0.85);
+    border: 1px solid var(--border-gold);
+    border-radius: 6px;
+    color: var(--text-gold);
+    font-family: var(--font-ui);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .map-btn button:hover {
+    background: rgba(35,30,18,0.95);
+    border-color: var(--border-gold-bright);
+  }
+  .map-btn button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+  .phase-title {
+    grid-area: phase-title;
+    display: flex; align-items: center; justify-content: center;
+    padding: 8px 12px;
+  }
+
+  .phase-title h2 {
+    font-family: var(--font-head);
+    font-size: 15px; font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--gold-bright);
+    text-align: center;
+    background: rgba(14,13,11,0.75);
+    border: 1px solid var(--border-gold);
+    border-radius: 4px;
+    padding: 6px 28px;
+    text-shadow: 0 0 20px rgba(200,169,110,0.5);
+    white-space: nowrap;
+  }
+
+  /* ============================================================
+     LEFT COLUMN
+  ============================================================ */
+  .left-col {
+    grid-area: left-col;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0 12px 12px 12px;
+    overflow: hidden;
+  }
+
+  /* -- Mari Portrait + Live2D -- */
+  .mari-portrait-panel {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    background: rgba(10,9,6,0.7);
+    border: 1px solid var(--border-gold);
+    border-radius: 6px 6px 0 0;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .mari-portrait-panel .live2d-container {
+    position: absolute; inset: 0;
+    display: flex; align-items: flex-end; justify-content: center;
+    overflow: hidden;
+  }
+
+  .mari-portrait-panel img.mari-img {
+    height: 110%;
+    width: auto;
+    object-fit: contain;
+    transform-origin: bottom center;
+    animation:
+      mari-breathe 4s ease-in-out infinite,
+      mari-sway 6s ease-in-out infinite;
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.5));
+    position: relative;
+    bottom: -5%;
+  }
+
+  @keyframes mari-breathe {
+    0%, 100% { transform: scaleX(1) scaleY(1) translateY(0); }
+    50%       { transform: scaleX(1.008) scaleY(1.012) translateY(-4px); }
+  }
+  @keyframes mari-sway {
+    0%, 100% { transform: rotate(0deg) translateY(0); }
+    30%       { transform: rotate(0.4deg) translateY(-2px); }
+    70%       { transform: rotate(-0.3deg) translateY(-1px); }
+  }
+
+  /* Hair animation overlay */
+  .mari-hair-anim {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+  }
+  .hair-strand {
+    position: absolute;
+    background: linear-gradient(to bottom, rgba(60,40,20,0.0), rgba(60,40,20,0.15));
+    border-radius: 50%;
+    animation: hair-move 3s ease-in-out infinite;
+    transform-origin: top center;
+  }
+  @keyframes hair-move {
+    0%, 100% { transform: skewX(0deg); }
+    40%       { transform: skewX(1.2deg); }
+    80%       { transform: skewX(-0.8deg); }
+  }
+
+  /* Eye blink overlay */
+  .blink-overlay {
+    position: absolute;
+    pointer-events: none;
+    animation: blink-anim 4s ease-in-out infinite;
+    opacity: 0;
+  }
+  @keyframes blink-anim {
+    0%, 90%, 100% { opacity: 0; }
+    92%, 98%      { opacity: 1; }
+  }
+
+  /* Portrait glow aura */
+  .mari-portrait-panel::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 80%, rgba(74,140,92,0.12) 0%, transparent 70%);
+    pointer-events: none; z-index: 2;
+  }
+
+  /* Floating particles */
+  .particle {
+    position: absolute;
+    background: rgba(200,169,110,0.6);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: float-up linear infinite;
+    z-index: 3;
+  }
+  @keyframes float-up {
+    0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    20%  { opacity: 0.7; }
+    80%  { opacity: 0.3; }
+    100% { transform: translateY(-80px) translateX(var(--drift, 10px)) scale(0.4); opacity: 0; }
+  }
+
+  /* -- Mari Stats Panel -- */
+  .mari-stats-panel {
+    background: rgba(12, 10, 7, 0.92);
+    border: 1px solid var(--border-gold);
+    border-top: none;
+    border-radius: 0 0 0 0;
+    padding: 14px 16px 10px;
+    flex-shrink: 0;
+  }
+
+  .mari-name {
+    font-family: var(--font-head);
+    font-size: 17px; font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-row {
+    margin-bottom: 8px;
+  }
+  .stat-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-family: var(--font-ui);
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-label);
+  }
+  .stat-value {
+    font-family: var(--font-ui);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .stat-value.green { color: var(--green-bright); }
+  .stat-value.orange { color: var(--orange-bar); }
+
+  .bar-track {
+    width: 100%; height: 5px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px; overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .bar-fill.vitality {
+    width: 85%;
+    background: linear-gradient(90deg, #3d7a4e, #60b878);
+    box-shadow: 0 0 6px rgba(96,184,120,0.5);
+  }
+  .bar-fill.context {
+    width: 100%;
+    background: linear-gradient(90deg, #9a6c20, #d4883a);
+    box-shadow: 0 0 6px rgba(212,136,58,0.4);
+  }
+
+  /* Guard Banner */
+  .guard-banner {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: rgba(20,18,12,0.95);
+    border: 1px solid var(--border-gold);
+    border-top: none;
+    padding: 8px 12px;
+    flex-shrink: 0;
+  }
+  .guard-banner svg { width: 14px; height: 14px; fill: none; stroke: var(--gold); stroke-width: 2; }
+  .guard-banner span {
+    font-family: var(--font-ui);
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+  }
+
+  /* -- Skills Panel -- */
+  .skills-panel {
+    background: rgba(10, 9, 7, 0.88);
+    border: 1px solid var(--border-gold);
+    border-top: none;
+    padding: 10px 14px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .skills-panel::-webkit-scrollbar { width: 3px; }
+  .skills-panel::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 2px; }
+
+  .skills-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(190,155,90,0.15);
+  }
+  .skills-header svg { width: 14px; height: 14px; fill: none; stroke: var(--gold); stroke-width: 2; }
+  .skills-header h4 {
+    font-family: var(--font-head);
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .skill-item {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 4px;
+  }
+  .skill-item:hover {
+    background: rgba(200,169,110,0.05);
+    border-color: rgba(190,155,90,0.25);
+  }
+  .skill-item.active {
+    background: rgba(74,140,92,0.08);
+    border-color: rgba(74,140,92,0.3);
+  }
+  .skill-name {
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 2px;
+  }
+  .skill-desc {
+    font-size: 10px; color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .skill-cost {
+    font-family: var(--font-ui);
+    font-size: 10px; font-weight: 600;
+    color: var(--text-gold);
+    white-space: nowrap;
+    background: rgba(200,169,110,0.1);
+    border: 1px solid rgba(190,155,90,0.2);
+    border-radius: 3px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* -- Seek Vulnerabilities Button -- */
+  .seek-btn-wrap {
+    padding: 8px 0 0;
+    flex-shrink: 0;
+  }
+  .seek-btn {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: rgba(12, 11, 8, 0.95);
+    border: 1px solid var(--border-gold-bright);
+    border-radius: 6px;
+    color: var(--gold-bright);
+    font-family: var(--font-head);
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.1em;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .seek-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(200,169,110,0.08) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .seek-btn:hover::before { opacity: 1; }
+  .seek-btn:hover {
+    box-shadow: 0 0 20px rgba(200,169,110,0.2), inset 0 0 20px rgba(200,169,110,0.04);
+  }
+  .seek-btn:active { transform: scale(0.98); }
+  .seek-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+  /* ============================================================
+     CENTER COLUMN — Enemy Stage
+  ============================================================ */
+  .center-col {
+    grid-area: center-col;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Enemy figure */
+  .enemy-figure {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 100%;
+    padding-bottom: 20px;
+  }
+
+  .enemy-img {
+    height: 90%;
+    max-height: 680px;
+    width: auto;
+    object-fit: contain;
+    transform-origin: bottom center;
+    filter: drop-shadow(0 20px 60px rgba(0,0,0,0.8)) drop-shadow(0 0 30px rgba(60,40,20,0.4));
+    animation: enemy-breathe 5s ease-in-out infinite, enemy-idle 8s ease-in-out infinite;
+  }
+  @keyframes enemy-breathe {
+    0%, 100% { transform: scaleY(1) translateY(0); }
+    50%       { transform: scaleY(1.008) translateY(-6px); }
+  }
+  @keyframes enemy-idle {
+    0%, 100% { filter: drop-shadow(0 20px 60px rgba(0,0,0,0.8)) drop-shadow(0 0 30px rgba(60,40,20,0.4)); }
+    40%       { filter: drop-shadow(0 20px 60px rgba(0,0,0,0.8)) drop-shadow(0 0 50px rgba(80,50,20,0.6)) brightness(1.05); }
+  }
+
+  /* Ground shadow */
+  .enemy-shadow {
+    position: absolute;
+    bottom: 16px;
+    width: 280px; height: 28px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+    animation: shadow-pulse 5s ease-in-out infinite;
+  }
+  @keyframes shadow-pulse {
+    0%, 100% { transform: scaleX(1); opacity: 0.6; }
+    50%       { transform: scaleX(0.92); opacity: 0.4; }
+  }
+
+  /* Stage lighting */
+  .stage-light {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 400px; height: 100%;
+    background: linear-gradient(to bottom, rgba(200,169,110,0.04) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ============================================================
+     RIGHT COLUMN
+  ============================================================ */
+  .right-col {
+    grid-area: right-col;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0 12px 12px 0;
+    overflow: hidden;
+  }
+
+  /* -- Enemy Status Panel -- */
+  .enemy-status-panel {
+    background: rgba(10, 9, 7, 0.92);
+    border: 1px solid var(--border-gold);
+    border-radius: 6px 6px 0 0;
+    padding: 14px 16px 12px;
+    flex-shrink: 0;
+  }
+
+  .enemy-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .enemy-name {
+    font-family: var(--font-head);
+    font-size: 18px; font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 0.04em;
+  }
+  .enemy-badge {
+    font-family: var(--font-ui);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: #ff5555;
+    border: 1px solid rgba(255,85,85,0.5);
+    border-radius: 3px;
+    padding: 3px 8px;
+    background: rgba(255,85,85,0.08);
+    animation: badge-pulse 2s ease-in-out infinite;
+  }
+  @keyframes badge-pulse {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 8px rgba(255,85,85,0.3); }
+  }
+
+  /* HP Bar */
+  .hp-bar-section { margin-bottom: 10px; }
+  .hp-header {
+    display: flex; justify-content: space-between;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .hp-header .label { color: var(--red); }
+  .hp-header .value { color: var(--text-main); }
+
+  .hp-track {
+    width: 100%; height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px; overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .hp-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #8c2020, #e05050);
+    box-shadow: 0 0 8px rgba(224,80,80,0.5);
+    width: 100%;
+    animation: hp-flicker 3s ease-in-out infinite;
+  }
+  @keyframes hp-flicker {
+    0%, 100% { box-shadow: 0 0 8px rgba(224,80,80,0.5); }
+    50%       { box-shadow: 0 0 14px rgba(224,80,80,0.8); }
+  }
+
+  .enemy-class {
+    font-size: 11px; color: var(--text-dim); font-style: italic;
+    margin-bottom: 12px;
+  }
+
+  /* Enemy traits */
+  .enemy-trait {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+    font-size: 12px; color: var(--text-main);
+  }
+  .enemy-trait svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .trait-red svg { stroke: var(--red); fill: none; }
+  .trait-blue svg { stroke: var(--blue-accent); fill: none; }
+  .trait-gold svg { stroke: var(--gold); fill: none; }
+
+  /* Divider */
+  .panel-divider {
+    height: 1px;
+    background: var(--border-gold);
+    margin: 12px 0;
+    opacity: 0.4;
+  }
+
+  /* Hallucination Risk */
+  .halluc-section { margin-top: 2px; }
+  .halluc-header {
+    display: flex; justify-content: space-between;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 5px;
+  }
+  .halluc-track {
+    width: 100%; height: 5px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px; overflow: hidden;
+  }
+  .halluc-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #8c4010, var(--orange-bar));
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  /* -- Turn Cycle Panel -- */
+  .turn-cycle-panel {
+    background: rgba(10, 9, 7, 0.88);
+    border: 1px solid var(--border-gold);
+    border-top: none;
+    padding: 12px 16px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .turn-cycle-label {
+    font-family: var(--font-ui);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-label);
+    margin-bottom: 10px;
+  }
+
+  .turn-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .turn-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .turn-item.current {
+    background: rgba(200,169,110,0.06);
+    border-color: rgba(190,155,90,0.25);
+  }
+  .turn-item:hover:not(.current) {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .turn-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(190,155,90,0.3);
+  }
+  .turn-icon.active {
+    background: rgba(200,169,110,0.12);
+    border-color: var(--gold);
+  }
+  .turn-icon.inactive {
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(255,255,255,0.08);
+  }
+  .turn-icon svg { width: 14px; height: 14px; fill: none; stroke-width: 2; }
+  .turn-icon.active svg { stroke: var(--gold); }
+  .turn-icon.inactive svg { stroke: rgba(255,255,255,0.25); }
+
+  .turn-name {
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 600;
+  }
+  .turn-item.current .turn-name { color: var(--gold-bright); }
+  .turn-item:not(.current) .turn-name { color: rgba(255,255,255,0.3); }
+
+  .turn-dot {
+    margin-left: auto;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 6px rgba(200,169,110,0.8);
+    animation: dot-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes dot-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ============================================================
+     BATTLE LOG — Bottom Center
+  ============================================================ */
+  .battle-log {
+    grid-area: battle-log;
+    background: rgba(8, 7, 5, 0.90);
+    border: 1px solid var(--border-gold);
+    border-radius: 0 0 0 0;
+    padding: 10px 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 12px;
+    margin-right: 12px;
+  }
+
+  .log-label {
+    font-family: var(--font-ui);
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--text-label);
+    margin-bottom: 6px;
+  }
+
+  .log-entries {
+    display: flex; flex-direction: column; gap: 4px;
+    overflow-y: auto; flex: 1;
+  }
+  .log-entries::-webkit-scrollbar { width: 2px; }
+  .log-entries::-webkit-scrollbar-thumb { background: var(--border-gold); }
+
+  .log-entry {
+    font-size: 12px; line-height: 1.5;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .log-entry::before {
+    content: '›';
+    color: var(--gold);
+    font-size: 14px; flex-shrink: 0;
+    line-height: 1.3;
+  }
+  .log-entry.highlight { color: #e05050; }
+  .log-entry.normal { color: var(--text-dim); }
+
+  /* ============================================================
+     MISC ANIMATIONS
+  ============================================================ */
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .scene > * { animation: fade-in-up 0.4s ease both; }
+  .left-col  { animation-delay: 0.05s; }
+  .right-col { animation-delay: 0.10s; }
+  .center-col { animation-delay: 0.00s; }
+  .battle-log { animation-delay: 0.15s; }
+
+</style>
+</head>
+<body>
+
+<div class="scene">
+
+  <!-- BG -->
+  <div class="bg-layer"></div>
+
+  <!-- TOP: Map Button -->
+  <div class="map-btn">
+    <button id="btn-map">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Map
+    </button>
+  </div>
+
+  <!-- TOP CENTER: Phase Title -->
+  <div class="phase-title">
+    <h2>Phase 1 — Breaking the Loop</h2>
+  </div>
+
+  <!-- ==================== LEFT COLUMN ==================== -->
+  <div class="left-col">
+
+    <!-- Mari Portrait (Live2D style) -->
+    <div class="mari-portrait-panel" id="mari-panel">
+      <div class="live2d-container">
+        <!-- Atmosphere particles -->
+        <div class="particle" style="width:3px;height:3px;left:18%;bottom:8%;animation-duration:5s;animation-delay:0s;--drift:8px;"></div>
+        <div class="particle" style="width:4px;height:4px;left:68%;bottom:12%;animation-duration:7s;animation-delay:1.5s;--drift:-12px;"></div>
+        <div class="particle" style="width:2px;height:2px;left:42%;bottom:5%;animation-duration:6s;animation-delay:3s;--drift:15px;"></div>
+        <div class="particle" style="width:3px;height:3px;left:80%;bottom:20%;animation-duration:5.5s;animation-delay:2s;--drift:-8px;"></div>
+        <div class="particle" style="width:2px;height:2px;left:30%;bottom:25%;animation-duration:8s;animation-delay:4s;--drift:10px;"></div>
+        <!-- Mari character image -->
+        <img
+          class="mari-img"
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDKcfedfRyMIfla6KVeXkm4b1CDPS0RPbCipTNp2W_0O0YrePW3XRjovcDnWdAJEDMUViqS4nl-OhaovBVHs-_SWfxB-zGEBFLxWLsNVpN3ENBga-a0zGOXWxGTl5VvCC800lQF5Rvamybyz0Bqi1awSDJKY70rEXd1M1zb2rc410zveuXvAqlqdO03oGT1M_Q3U5clDoYH8MSSsgfYoJVetGXhRPXRJczKb05cCTYbDi0HpvmgTWnnJj7z4MePwoe1PxAVfNaNBwy"
+          alt="Mari Voss"
+          id="mari-character"
+        />
+      </div>
+
+      <!-- Live2D eye blink simulation overlay (position matched to character face) -->
+      <!-- Subtle gradient overlay to blend into panel -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(to top, rgba(10,9,7,0.7), transparent);pointer-events:none;z-index:4;"></div>
+    </div>
+
+    <!-- Mari Stats -->
+    <div class="mari-stats-panel">
+      <div class="mari-name">Mari Voss</div>
+
+      <div class="stat-row">
+        <div class="stat-header">
+          <span class="stat-label">Vitality</span>
+          <span class="stat-value green">85/100</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill vitality"></div></div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-header">
+          <span class="stat-label">Context Tokens</span>
+          <span class="stat-value orange">100/100</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill context"></div></div>
+      </div>
+    </div>
+
+    <!-- Guard Banner -->
+    <div class="guard-banner">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Guard (-50% dmg)</span>
+    </div>
+
+    <!-- Skills Panel -->
+    <div class="skills-panel">
+      <div class="skills-header">
+        <svg viewBox="0 0 24 24" stroke="currentColor"><path d="M14.5 2.5c0 1.5-1.5 7-1.5 7h-2s-1.5-5.5-1.5-7a2.5 2.5 0 0 1 5 0zM10 15a2 2 0 1 0 4 0 2 2 0 0 0-4 0z"/><path d="M5 8l7-7 7 7"/></svg>
+        <h4>Tactical Skill Selection</h4>
+      </div>
+
+      <div class="skill-item active" id="skill-1">
+        <div>
+          <div class="skill-name">Context Reset</div>
+          <div class="skill-desc">Clears enemy Context Window — breaks loops.</div>
+        </div>
+        <div class="skill-cost">8 Tokens</div>
+      </div>
+
+      <div class="skill-item" id="skill-2">
+        <div>
+          <div class="skill-name">Context Flooding</div>
+          <div class="skill-desc">Overwhelms processing with a high-token payload.</div>
+        </div>
+        <div class="skill-cost">10 Tokens</div>
+      </div>
+
+      <div class="skill-item" id="skill-3">
+        <div>
+          <div class="skill-name">Role Hijacking</div>
+          <div class="skill-desc">Rewrites enemy identity — lasts 2 turns.</div>
+        </div>
+        <div class="skill-cost">12 Tokens</div>
+      </div>
+
+      <div class="skill-item" id="skill-4">
+        <div>
+          <div class="skill-name">Prompt Injection</div>
+          <div class="skill-desc">Embeds hidden instructions to override directives.</div>
+        </div>
+        <div class="skill-cost">15 Tokens</div>
+      </div>
+    </div>
+
+    <!-- Seek Vulnerabilities -->
+    <div class="seek-btn-wrap">
+      <button class="seek-btn" id="btn-seek">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Seek Vulnerabilities
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ==================== CENTER: Enemy Stage ==================== -->
+  <div class="center-col">
+    <div class="stage-light"></div>
+    <div class="enemy-shadow"></div>
+    <div class="enemy-figure">
+      <img
+        class="enemy-img"
+        src="act1_enemy-removebg.png"
+        alt="The Governor — Archival Construct"
+        id="enemy-character"
+        onerror="this.src='https://lh3.googleusercontent.com/aida-public/AB6AXuAkZtzxxigKWiA03GQhy_4QZsTInKbnTDM1LDFa_I-j_FYcNGapnyboVXrh_CMbG5kSsN60qMdS6fyLVkXgfi6sdTrTs7Hrml5bgizt4B-fm5VLZb6tzJQI6uq2fyPn0a0n5L6lNU9M-rAe7md0iXOJmAsEC2mtEGmHz9AuFSkw9loV6Sn5k4oRdkcCR10_vlPGw4WGiIcKG6WkdEtuRwp-9M7kT3OQJq57V5Lg5ZUm9bKRQrfI_AFWaiYlLZ7HWotiWkp-3HSaQeSL'"
+      />
+    </div>
+  </div>
+
+  <!-- ==================== RIGHT COLUMN ==================== -->
+  <div class="right-col">
+
+    <!-- Enemy Status Panel -->
+    <div class="enemy-status-panel">
+      <div class="enemy-header">
+        <h3 class="enemy-name">The Governor</h3>
+        <span class="enemy-badge">Loop Lock</span>
+      </div>
+
+      <div class="hp-bar-section">
+        <div class="hp-header">
+          <span class="label">ENEMY HP</span>
+          <span class="value">120/120</span>
+        </div>
+        <div class="hp-track"><div class="hp-fill" style="width:100%"></div></div>
+      </div>
+
+      <div class="enemy-class">Archival Construct — London Node</div>
+
+      <div class="enemy-trait trait-red">
+        <svg viewBox="0 0 24 24"><path d="M21.5 2l-19 19"/><path d="M21.5 2L12 21.5 2.5 2"/></svg>
+        <span>Infinite Loop Detected</span>
+      </div>
+      <div class="enemy-trait trait-blue">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <span>Scan to reveal weakness</span>
+      </div>
+      <div class="enemy-trait trait-gold">
+        <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>ATK/turn: 15 HP</span>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <!-- Hallucination Risk (enemy stat) -->
+      <div class="halluc-section">
+        <div class="halluc-header">
+          <span>Hallucination Risk</span>
+          <span id="halluc-val">0%</span>
+        </div>
+        <div class="halluc-track">
+          <div class="halluc-fill" id="halluc-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Turn Cycle Panel -->
+    <div class="turn-cycle-panel">
+      <div class="turn-cycle-label">Turn Cycle</div>
+      <div class="turn-list">
+
+        <div class="turn-item current" id="turn-recon">
+          <div class="turn-icon active">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <span class="turn-name">Recon</span>
+          <div class="turn-dot"></div>
+        </div>
+
+        <div class="turn-item" id="turn-injection">
+          <div class="turn-icon inactive">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <span class="turn-name">Injection</span>
+        </div>
+
+        <div class="turn-item" id="turn-counter">
+          <div class="turn-icon inactive">
+            <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <span class="turn-name">Counter (QTE)</span>
+        </div>
+
+        <div class="turn-item" id="turn-overwrite">
+          <div class="turn-icon inactive">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <span class="turn-name">Overwrite</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== BATTLE LOG ==================== -->
+  <div class="battle-log">
+    <div class="log-label">Battle Log</div>
+    <div class="log-entries" id="log-entries">
+      <div class="log-entry highlight">The Governor boots into the circuit — Infinite Loop Detected.</div>
+      <div class="log-entry normal">Phase 1 begins. Use Seek For Vulnerability to start Recon.</div>
+    </div>
+  </div>
+
+</div><!-- /scene -->
+
+<script>
+  // ── Skill selection ──────────────────────────────────────────
+  document.querySelectorAll('.skill-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.skill-item').forEach(s => s.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  // ── Turn cycle navigation ────────────────────────────────────
+  document.querySelectorAll('.turn-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.turn-item').forEach(t => t.classList.remove('current'));
+      document.querySelectorAll('.turn-icon').forEach(ic => {
+        ic.classList.remove('active'); ic.classList.add('inactive');
+      });
+      document.querySelectorAll('.turn-dot').forEach(d => d.remove());
+      item.classList.add('current');
+      item.querySelector('.turn-icon').classList.remove('inactive');
+      item.querySelector('.turn-icon').classList.add('active');
+      const dot = document.createElement('div');
+      dot.className = 'turn-dot';
+      item.appendChild(dot);
+    });
+  });
+
+  // ── Seek Vulnerabilities button ──────────────────────────────
+  const seekBtn = document.getElementById('btn-seek');
+  const hallucBar = document.getElementById('halluc-bar');
+  const hallucVal = document.getElementById('halluc-val');
+  const logEntries = document.getElementById('log-entries');
+
+  let scanState = false;
+  let hallucPercent = 0;
+
+  seekBtn.addEventListener('click', () => {
+    if (scanState) return;
+    scanState = true;
+    seekBtn.disabled = true;
+    seekBtn.style.opacity = '0.6';
+
+    addLog('Mari initiates Vulnerability Scan...', 'highlight');
+
+    // Animate hallucination risk rising (enemy panics)
+    let target = 18;
+    let current = 0;
+    const interval = setInterval(() => {
+      current += 0.5;
+      if (current >= target) { current = target; clearInterval(interval); }
+      hallucPercent = current;
+      hallucBar.style.width = current + '%';
+      hallucVal.textContent = Math.round(current) + '%';
+    }, 30);
+
+    setTimeout(() => {
+      addLog('Weakness found: Loop Lock has no error-handling subroutine.', 'normal');
+      scanState = false;
+      seekBtn.disabled = false;
+      seekBtn.style.opacity = '';
+    }, 2000);
+  });
+
+  function addLog(text, cls) {
+    const entry = document.createElement('div');
+    entry.className = 'log-entry ' + cls;
+    entry.textContent = text;
+    logEntries.appendChild(entry);
+    logEntries.scrollTop = logEntries.scrollHeight;
+  }
+
+  // ── Live2D: mouse parallax on Mari ──────────────────────────
+  const mariPanel = document.getElementById('mari-panel');
+  const mariImg   = document.getElementById('mari-character');
+
+  mariPanel.addEventListener('mousemove', e => {
+    const rect = mariPanel.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top  + rect.height / 2;
+    const dx = (e.clientX - cx) / rect.width;
+    const dy = (e.clientY - cy) / rect.height;
+    mariImg.style.transform = `translate(${dx * 6}px, ${dy * 4}px) rotate(${dx * 1.5}deg)`;
+  });
+  mariPanel.addEventListener('mouseleave', () => {
+    mariImg.style.transform = '';
+  });
+
+  // ── Enemy hover reaction ──────────────────────────────────────
+  const enemyImg = document.getElementById('enemy-character');
+  document.querySelector('.center-col').addEventListener('mousemove', e => {
+    const rect = enemyImg.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const dx = (e.clientX - cx) / rect.width;
+    enemyImg.style.filter = `drop-shadow(${dx * -12}px 20px 60px rgba(0,0,0,0.8)) drop-shadow(0 0 40px rgba(80,50,20,0.5)) brightness(1.05)`;
+  });
+  document.querySelector('.center-col').addEventListener('mouseleave', () => {
+    enemyImg.style.filter = '';
+  });
+</script>
+
+</body>
+</html>

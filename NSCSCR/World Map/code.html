@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MariVectori - World Map</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&amp;family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#2a6038",
+                        "on-secondary-container": "#5e5548",
+                        "on-tertiary-container": "#554020",
+                        "secondary-container": "#f0e8db",
+                        "on-primary-fixed": "#002110",
+                        "on-error-container": "#690005",
+                        "primary": "#4a7c59",
+                        "on-tertiary-fixed": "#221a05",
+                        "on-secondary-fixed": "#1e1a13",
+                        "surface-container-low": "#f5f1ea",
+                        "background": "#faf6f0",
+                        "surface-container-highest": "#e4e0d8",
+                        "outline": "#74796e",
+                        "tertiary-fixed-dim": "#dcc48e",
+                        "tertiary-container": "#c4a66a",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c4c8bc",
+                        "on-surface-variant": "#4a4e4a",
+                        "on-error": "#ffffff",
+                        "tertiary": "#705c30",
+                        "surface-dim": "#dbd7cf",
+                        "primary-fixed": "#c8e8d0",
+                        "surface-variant": "#e4e0d8",
+                        "on-surface": "#2e3230",
+                        "on-background": "#2e3230",
+                        "error-container": "#ffdad8",
+                        "on-secondary-fixed-variant": "#4a4538",
+                        "surface-tint": "#4a7c59",
+                        "surface": "#faf6f0",
+                        "tertiary-fixed": "#f8e0a8",
+                        "on-primary-container": "#d8f0de",
+                        "secondary-fixed-dim": "#d4ccbf",
+                        "inverse-primary": "#8ecf9e",
+                        "error": "#b83230",
+                        "primary-container": "#78a886",
+                        "inverse-surface": "#2e3230",
+                        "secondary": "#6b6358",
+                        "inverse-on-surface": "#f5f0e8",
+                        "secondary-fixed": "#f0e8db",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#eae6de",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#f0ece4",
+                        "primary-fixed-dim": "#8ecf9e",
+                        "surface-bright": "#faf6f0",
+                        "on-tertiary-fixed-variant": "#554020",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Literata"],
+                        "display": ["Literata"],
+                        "body": ["Nunito Sans"],
+                        "label": ["Nunito Sans"]
+                    },
+                    "boxShadow": {
+                        'soft': '0 4px 20px rgba(46, 50, 48, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .map-line {
+            stroke-dasharray: 5, 5;
+            animation: dash 20s linear infinite;
+        }
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -100;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body h-screen w-full overflow-hidden flex">
+<!-- Desktop Side Navigation -->
+<nav class="hidden md:flex flex-col p-4 border-r border-outline-variant/20 bg-surface dark:bg-surface-dim shadow-md h-full w-64 left-0 top-0 z-40 transition-all duration-300 ease-in-out shrink-0 relative">
+<div class="mb-8 px-4 flex items-center space-x-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden shrink-0 border border-tertiary/20">
+<img alt="Academic Insignia" class="w-full h-full object-cover" data-alt="A small circular academic insignia featuring a vintage quill crossed with a brass gear, set against a warm cream background. The design is elegant, grounded, and subtly steampunk, utilizing earthy forest greens and amber accents. The style is illustrative and classic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ_i8LU_0g8k738UCXmnPK4yxq95DdFP21T4loc6iPygIETeB7f-YvETVyuGjlCkvAxertoGxYhQyQagJqeCuCi5fEJnZGY4-FN_qkPlfaNv5S6kbUft8zayYTKCGhIqkpK8bqNAzbEi7iU39q3EqA21ylujrvxXlE5CvB6Re41kqVFHLsXlgUIdc__POtzZ491Ayrmf1TTcSgcZhETlDNwNzD_WS51tflpREywHvU8rej8prWyrc4qtFzp7YFYpwbAvho9hI6pa3g"/>
+</div>
+<div>
+<h1 class="font-headline text-xl text-tertiary dark:text-tertiary-fixed tracking-tight leading-none">MariVectori</h1>
+<p class="font-body text-xs text-on-surface-variant mt-1">Victorian Scholar</p>
+</div>
+</div>
+<ul class="flex flex-col space-y-2 flex-grow">
+<!-- Active Tab: World Map -->
+<li>
+<a class="flex items-center space-x-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-bold transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="map" data-weight="fill" style="font-variation-settings: 'FILL' 1;">map</span>
+<span class="font-body text-sm font-medium">World Map</span>
+</a>
+</li>
+<!-- Inactive Tabs -->
+<li>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-secondary-container/50 hover:bg-primary/10 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="menu_book">menu_book</span>
+<span class="font-body text-sm font-medium">Intelligence Panel</span>
+</a>
+</li>
+<li>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-secondary-container/50 hover:bg-primary/10 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="inventory_2">inventory_2</span>
+<span class="font-body text-sm font-medium">Inventory</span>
+</a>
+</li>
+<li>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-secondary-container/50 hover:bg-primary/10 rounded-lg transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="auto_stories">auto_stories</span>
+<span class="font-body text-sm font-medium">Chronicles</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto pt-6 border-t border-outline-variant/30 px-2">
+<button class="w-full py-3 px-4 bg-surface-container-high hover:bg-secondary-container/50 text-on-surface rounded-xl font-headline font-medium shadow-sm transition-colors border border-outline-variant/30 flex items-center justify-center space-x-2">
+<span class="material-symbols-outlined text-tertiary" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span>Consult Ledger</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow flex flex-col relative h-full">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-surface-container-low docked full-width top-0 bg-surface-container-low dark:bg-surface-container shadow-sm fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-3 md:relative md:w-full">
+<div class="flex items-center md:hidden">
+<h1 class="font-headline text-2xl font-bold text-primary dark:text-primary-fixed-dim">MariVectori</h1>
+</div>
+<div class="hidden md:flex items-center space-x-2">
+<!-- Decorative breadcrumb or location indicator for web -->
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="explore">explore</span>
+<span class="font-headline font-bold text-tertiary tracking-tight text-lg">European Theatre</span>
+</div>
+<!-- Actions -->
+<div class="flex items-center space-x-4">
+<button class="p-2 text-on-surface-variant dark:text-on-surface-variant hover:text-primary hover:bg-secondary-container/30 transition-colors rounded-full active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+</button>
+<button class="p-2 text-on-surface-variant dark:text-on-surface-variant hover:text-primary hover:bg-secondary-container/30 transition-colors rounded-full active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-2 hidden md:block">
+<img alt="Scholarly Avatar" class="w-full h-full object-cover" data-alt="A close-up portrait avatar of a Victorian scholar, featuring warm earthy tones, a subtle monocle, and a backdrop of antique parchment. The lighting is soft and natural, emphasizing a grounded, human aesthetic without harsh contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhRuAx6IBYdks0nzvFL_sANTJ-7urGgHWp5QMmcz3atnXtMx_G6T7jAHwR6Y1GzHG-XC7mD4_AOGro-fss3MvdYi2vdpyjVkDV3zvgx67uK9N3BxQIoZ0_9VDcbRGlUEuH6tcopIqlp8jDdhGh88Az7JHsqs-1qD6IAH-1LEzO5NLSJQ95I8YUzHw76AlckUUUBqlZcXgsQFVCkP9iZ7tUmfDNUrjHrgOUmtqk-URKwb5-YKdsdNEO1_9fAxhr_HZo4O70DerzOLI-"/>
+</div>
+</div>
+</header>
+<!-- Canvas (The Map) -->
+<div class="flex-grow relative overflow-hidden bg-surface-container pb-16 md:pb-0">
+<!-- Map Background Image -->
+<div class="absolute inset-0 w-full h-full bg-cover bg-center" data-alt="A highly detailed, wide-angle view of a vintage 19th-century map of Europe, printed on beautifully textured aged parchment. The map incorporates subtle steampunk elements, such as faint brass gear schematics integrated into the oceanic regions and ornate classical compass roses. The color palette relies heavily on warm creams, earthy browns, and soft, faded forest greens. The lighting is soft and diffused, creating a calm, grounded, and deeply organic 'Terra' aesthetic free of harsh modern contrasts." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAPmQlfVHFkaYjNZN3cI4xExXs0yoWl4nfF3nnC3VwNwg2yRprQX6A1yeFghIm2ZgKjqp0GfO2JEB1F6cJFS4-WZLol4fjzBFAPytmwTnyONsBSatM7UvY15mKFx5yu4m5dhSo-UdA1PGEhllsA63uELc9mdNY4uoT8b9aTQS59HBpodj9mbMOv1veaMl9l-F8euwnRrlJiDQEvFmtnYCXz3jYkkF7GXBjZmNHnMvcxyHXWDviPmQlWt22Y50uQ29VECfkUluzj9hbs')"></div>
+<!-- Atmospheric Overlay -->
+<div class="absolute inset-0 bg-background/20 pointer-events-none mix-blend-multiply"></div>
+<div class="absolute inset-0 bg-gradient-to-b from-background/40 to-transparent pointer-events-none"></div>
+<!-- UI Overlay: Top Left HUD -->
+<div class="absolute top-6 left-6 flex flex-col space-y-3 z-10">
+<!-- HP Card -->
+<div class="bg-surface/90 backdrop-blur-sm border border-outline-variant/40 rounded-xl p-3 shadow-soft flex items-center space-x-3 w-48">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm" data-icon="favorite" data-weight="fill" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-end mb-1">
+<span class="font-label text-xs font-bold text-on-surface uppercase tracking-wider">Vitality</span>
+<span class="font-headline text-sm font-bold text-on-surface">85/100</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 85%;"></div>
+</div>
+</div>
+</div>
+<!-- API Credits Card -->
+<div class="bg-surface/90 backdrop-blur-sm border border-outline-variant/40 rounded-xl p-3 shadow-soft flex items-center space-x-3 w-48">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0 border border-tertiary/20">
+<span class="material-symbols-outlined text-sm" data-icon="toll" data-weight="fill" style="font-variation-settings: 'FILL' 1;">toll</span>
+</div>
+<div class="flex-grow">
+<span class="font-label text-xs font-bold text-on-surface-variant uppercase tracking-wider block">API Credits</span>
+<span class="font-headline text-lg font-bold text-tertiary leading-none mt-0.5 block">1,240</span>
+</div>
+</div>
+</div>
+<!-- UI Overlay: Top Right Shop -->
+<div class="absolute top-6 right-6 z-10">
+<button class="group flex items-center space-x-3 bg-surface/90 backdrop-blur-sm border border-tertiary/30 hover:border-tertiary rounded-full pr-4 pl-1.5 py-1.5 shadow-soft transition-all duration-300">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-tertiary flex items-center justify-center group-hover:bg-tertiary group-hover:text-on-tertiary transition-colors">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+</div>
+<span class="font-headline font-bold text-on-surface text-sm">Rossi's Shop</span>
+</button>
+</div>
+<!-- Map Nodes Container (Interactive Area) -->
+<div class="absolute inset-0 z-0">
+<!-- SVG Lines connecting nodes -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+<!-- Path from London to Brussels -->
+<path class="map-line opacity-60" d="M 30% 45% Q 40% 48% 45% 55%" fill="none" stroke="#705c30" stroke-width="2"></path>
+<!-- Path from Brussels to Vienna -->
+<path class="opacity-40" d="M 45% 55% Q 55% 60% 65% 65%" fill="none" stroke="#c4c8bc" stroke-dasharray="4,4" stroke-width="1.5"></path>
+</svg>
+<!-- NODE 1: London (Act I) - Unlocked / Active -->
+<button class="absolute flex flex-col items-center justify-center group cursor-pointer" style="top: 45%; left: 30%; transform: translate(-50%, -50%);">
+<div class="relative w-14 h-14 flex items-center justify-center">
+<!-- Pulse effect -->
+<div class="absolute inset-0 bg-primary/20 rounded-full animate-ping"></div>
+<!-- Brass Outer Ring -->
+<div class="absolute inset-1 rounded-full border-2 border-tertiary bg-surface shadow-md"></div>
+<!-- Inner Core -->
+<div class="absolute inset-2 rounded-full bg-primary flex items-center justify-center shadow-inner">
+<span class="material-symbols-outlined text-on-primary text-xl" data-icon="my_location" data-weight="fill" style="font-variation-settings: 'FILL' 1;">my_location</span>
+</div>
+</div>
+<div class="mt-2 bg-surface/90 backdrop-blur-sm px-3 py-1 rounded-lg border border-tertiary/30 shadow-sm text-center">
+<span class="block font-headline font-bold text-on-surface text-sm leading-tight">London</span>
+<span class="block font-label text-[10px] text-tertiary uppercase font-bold tracking-widest mt-0.5">Act I</span>
+</div>
+</button>
+<!-- NODE 2: Brussels (Act II) - Locked -->
+<button class="absolute flex flex-col items-center justify-center group cursor-not-allowed opacity-80 hover:opacity-100 transition-opacity" style="top: 55%; left: 45%; transform: translate(-50%, -50%);">
+<div class="relative w-12 h-12 flex items-center justify-center">
+<!-- Outer Ring -->
+<div class="absolute inset-0 rounded-full border-2 border-outline-variant bg-surface-container-low shadow-sm"></div>
+<!-- Inner Core -->
+<div class="absolute inset-1.5 rounded-full bg-surface-variant flex items-center justify-center border border-outline-variant/50">
+<span class="material-symbols-outlined text-outline text-lg" data-icon="lock">lock</span>
+</div>
+</div>
+<div class="mt-2 bg-surface-container/90 px-3 py-1 rounded-lg border border-outline-variant/30 text-center">
+<span class="block font-headline font-bold text-on-surface-variant text-sm leading-tight">Brussels</span>
+<span class="block font-label text-[10px] text-outline uppercase font-bold tracking-widest mt-0.5">Act II</span>
+</div>
+</button>
+<!-- NODE 3: Vienna (Act III) - Locked -->
+<button class="absolute flex flex-col items-center justify-center group cursor-not-allowed opacity-70 hover:opacity-100 transition-opacity" style="top: 65%; left: 65%; transform: translate(-50%, -50%);">
+<div class="relative w-10 h-10 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border border-outline-variant bg-surface-container-low shadow-sm"></div>
+<div class="absolute inset-1 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="lock">lock</span>
+</div>
+</div>
+<div class="mt-2 bg-surface-container/80 px-2 py-0.5 rounded-lg border border-outline-variant/20 text-center">
+<span class="block font-headline font-medium text-on-surface-variant text-xs leading-tight">Vienna</span>
+</div>
+</button>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Navigation (Visible only on small screens) -->
+<nav class="md:hidden bg-surface-container-high dark:bg-surface-container-highest docked full-width bottom-0 rounded-t-xl border-t border-outline-variant/30 shadow-xl fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-2 h-16">
+<!-- Inactive Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-secondary-fixed-variant p-2 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="monitoring">monitoring</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Stats</span>
+</a>
+<!-- Inactive Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-secondary-fixed-variant p-2 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="font-label text-[10px] uppercase tracking-widest">HUD</span>
+</a>
+<!-- Inactive Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-secondary-fixed-variant p-2 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="contract">contract</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Battle Log</span>
+</a>
+<!-- Active Tab (Maps loosely to World Map context for mobile) -->
+<a class="flex flex-col items-center justify-center bg-tertiary-container text-on-tertiary-container rounded-full w-14 h-14 -mt-4 shadow-lg hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="explore" data-weight="fill" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-label text-[9px] uppercase tracking-widest font-bold">Navigation</span>
+</a>
+<!-- Inactive Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-secondary-fixed-variant p-2 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="logout">logout</span>
+<span class="font-label text-[10px] uppercase tracking-widest">Exit</span>
+</a>
+</nav>
+</body></html>
