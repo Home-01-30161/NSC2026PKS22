@@ -409,7 +409,7 @@ export default function KnowledgeCard({ actId = 'ACT_1', onContinue }) {
             fontSize: 9, letterSpacing: '0.4em',
             color: 'rgba(200,169,106,0.25)',
           }}>
-            PROCEED TO OVERWRITE CONSOLE
+            PROCEED TO ROSSI'S SHOP
           </div>
         </div>
       )}

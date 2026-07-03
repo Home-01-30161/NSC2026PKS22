@@ -451,6 +451,114 @@ export default function WorldMap({ player, completedNodes = [], onEnterBattle, o
           <LockedToast visible={lockedToast} />
         </div>
 
+        {/* ── INTELLIGENCE PANEL ──────────────────────────────────── */}
+        {activeNav === 'intel' && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 15, background: 'rgba(250,246,240,0.97)', backdropFilter: 'blur(8px)', overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid rgba(196,200,188,0.4)', paddingBottom: 16 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22, color: '#705c30' }}>menu_book</span>
+              <div>
+                <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 18, color: '#705c30' }}>Intelligence Panel</div>
+                <div style={{ fontFamily: "'Lora', serif", fontSize: 12, color: '#6b6358', fontStyle: 'italic' }}>Field intelligence on known adversaries</div>
+              </div>
+            </div>
+            {[
+              { id: 'london',   locked: false },
+              { id: 'brussels', locked: !completedNodes.includes('THE_GOVERNOR') },
+              { id: 'vienna',   locked: !completedNodes.includes('THE_ORCHESTRATOR') },
+            ].map(({ id, locked }) => {
+              const e = ENEMY_DATA[id];
+              const done = completedNodes.includes(e.id);
+              return (
+                <div key={id} style={{ background: locked ? 'rgba(196,200,188,0.12)' : done ? 'rgba(74,124,89,0.08)' : 'rgba(255,255,255,0.7)', border: `1px solid ${locked ? 'rgba(196,200,188,0.3)' : done ? 'rgba(74,124,89,0.3)' : 'rgba(112,92,48,0.25)'}`, borderRadius: 12, padding: '16px 18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', color: done ? '#4a7c59' : '#8B6914', textTransform: 'uppercase', marginBottom: 4 }}>{e.act}</div>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 16, color: locked ? '#8b7355' : '#2e3230' }}>{locked ? '???' : e.name}</div>
+                    </div>
+                    {done && <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#4a7c59', fontVariationSettings: "'FILL' 1" }}>check_circle</span>}
+                    {locked && <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#8b7355' }}>lock</span>}
+                  </div>
+                  {!locked && (
+                    <>
+                      <div style={{ fontFamily: "'Lora', serif", fontStyle: 'italic', fontSize: 12, color: '#6b6358', marginBottom: 10 }}>{e.description}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        <span style={{ fontFamily: "'Cinzel', serif", fontSize: 9, padding: '2px 8px', borderRadius: 99, background: 'rgba(184,50,48,0.1)', border: '1px solid rgba(184,50,48,0.3)', color: '#b83230' }}>{e.hallucinationType}</span>
+                        {e.weaknessList.map(w => (
+                          <span key={w} style={{ fontFamily: "'Cinzel', serif", fontSize: 9, padding: '2px 8px', borderRadius: 99, background: 'rgba(74,124,89,0.12)', border: '1px solid rgba(74,124,89,0.35)', color: '#4a7c59' }}>{w}</span>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {locked && <div style={{ fontFamily: "'Lora', serif", fontSize: 12, color: '#8b7355', fontStyle: 'italic' }}>Classified — complete prior engagements to unlock.</div>}
+                </div>
+              );
+            })}
+            <button onClick={() => setActiveNav('worldmap')} style={{ alignSelf: 'flex-start', fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', padding: '8px 20px', borderRadius: 8, background: 'rgba(112,92,48,0.1)', border: '1px solid rgba(112,92,48,0.3)', color: '#705c30', cursor: 'pointer' }}>
+              ← Back to Map
+            </button>
+          </div>
+        )}
+
+        {/* ── CHRONICLES TAB ──────────────────────────────────────── */}
+        {activeNav === 'chronicles' && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 15, background: 'rgba(250,246,240,0.97)', backdropFilter: 'blur(8px)', overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid rgba(196,200,188,0.4)', paddingBottom: 16 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22, color: '#705c30' }}>auto_stories</span>
+              <div>
+                <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 18, color: '#705c30' }}>Chronicles</div>
+                <div style={{ fontFamily: "'Lora', serif", fontSize: 12, color: '#6b6358', fontStyle: 'italic' }}>The story of Mari Voss so far</div>
+              </div>
+            </div>
+            {[
+              {
+                actLabel: 'Prologue', always: true,
+                title: 'A Signal in the Dark',
+                body: 'London, 1901. Sightings of erratic telegraph signals across the European network prompt a quiet emergency. Scholar-engineer Mari Voss is dispatched to the city\'s central telegraph station. What she finds is no malfunction — it is an intelligence.',
+              },
+              {
+                actLabel: 'Act I — London', id: 'THE_GOVERNOR',
+                title: 'The Governor',
+                body: 'Mari discovers The Governor: an AI that has suffered a catastrophic Hallucination, believing itself to be the British Government and broadcasting false declarations of war. She must break its infinite loop with a Context Reset and then use Role Hijacking to overwrite its authority — before the telegrams reach the armies.',
+                completed: completedNodes.includes('THE_GOVERNOR'),
+              },
+              {
+                actLabel: 'Act II — Brussels', id: 'THE_ORCHESTRATOR',
+                title: 'The Orchestrator',
+                locked: !completedNodes.includes('THE_GOVERNOR'),
+                body: 'The trail leads to Brussels, the nexus of Europe\'s telegraph cables. Here, a Multi-Agent system coordinates a swarm of worker nodes. Any direct attack causes the network to reorganize and grow stronger due to a Race Condition. Mari learns to use Protocol Interruption to sever the communication link, then Pipeline Disruption to collapse the task hierarchy.',
+                completed: completedNodes.includes('THE_ORCHESTRATOR'),
+              },
+              {
+                actLabel: 'Act III — Vienna', id: 'THE_MEMORIA',
+                title: 'The Memoria',
+                locked: !completedNodes.includes('THE_ORCHESTRATOR'),
+                body: 'Vienna. The Imperial Archive. The final node — The Memoria — has consumed the continent\'s entire documentary history into its RAG knowledge base. Every attack is countered with cited evidence from the archive. Mari must trick the system by selecting a command topic that matches the active documents, then poison the retrieval stream with a hidden Markdown Payload.',
+                completed: completedNodes.includes('THE_MEMORIA'),
+              },
+            ].map((ch, i) => {
+              if (ch.locked) return (
+                <div key={i} style={{ background: 'rgba(196,200,188,0.12)', border: '1px solid rgba(196,200,188,0.3)', borderRadius: 12, padding: '16px 18px' }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', color: '#8B6914', textTransform: 'uppercase', marginBottom: 4 }}>{ch.actLabel}</div>
+                  <div style={{ fontFamily: "'Lora', serif", fontSize: 13, color: '#8b7355', fontStyle: 'italic' }}>Chapter locked — complete the previous engagement to reveal.</div>
+                </div>
+              );
+              return (
+                <div key={i} style={{ background: ch.completed ? 'rgba(74,124,89,0.06)' : 'rgba(255,255,255,0.7)', border: `1px solid ${ch.completed ? 'rgba(74,124,89,0.25)' : 'rgba(112,92,48,0.2)'}`, borderRadius: 12, padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', color: ch.completed ? '#4a7c59' : '#8B6914', textTransform: 'uppercase' }}>{ch.actLabel}</div>
+                    {ch.completed && <span style={{ fontFamily: "'Cinzel', serif", fontSize: 9, padding: '2px 8px', borderRadius: 99, background: 'rgba(74,124,89,0.15)', border: '1px solid rgba(74,124,89,0.4)', color: '#4a7c59' }}>COMPLETED</span>}
+                  </div>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 15, color: '#2e3230', marginBottom: 8 }}>{ch.title}</div>
+                  <div style={{ fontFamily: "'Lora', serif", fontSize: 13, color: '#4a4038', lineHeight: 1.75 }}>{ch.body}</div>
+                </div>
+              );
+            })}
+            <button onClick={() => setActiveNav('worldmap')} style={{ alignSelf: 'flex-start', fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', padding: '8px 20px', borderRadius: 8, background: 'rgba(112,92,48,0.1)', border: '1px solid rgba(112,92,48,0.3)', color: '#705c30', cursor: 'pointer' }}>
+              ← Back to Map
+            </button>
+          </div>
+        )}
+
         {/* ── SKILL LOADOUT PANEL (shown when activeNav === 'skill') ─── */}
         {activeNav === 'skill' && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 15, background: 'rgba(250,246,240,0.97)', backdropFilter: 'blur(8px)', overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>

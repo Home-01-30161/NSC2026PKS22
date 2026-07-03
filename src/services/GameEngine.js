@@ -3,6 +3,7 @@
 export const GAME_PHASES = {
   TITLE: 'TITLE',
   PROLOGUE: 'PROLOGUE',
+  TUTORIAL: 'TUTORIAL',
   WORLD_MAP: 'WORLD_MAP',
   SHOP: 'SHOP',
   ENEMY_CUTSCENE: 'ENEMY_CUTSCENE',
@@ -80,6 +81,18 @@ export const SKILLS = {
 };
 
 export const ENEMIES = {
+  TUTORIAL_DUMMY: {
+    id: 'TUTORIAL_DUMMY',
+    name: 'Training Dummy',
+    description: 'A harmless simulation for learning the battle system.',
+    maxHp: 50,
+    weakness: ['LOGIC', 'DATA', 'IDENTITY', 'NETWORK'],
+    resistance: [],
+    attacks: [
+      { name: 'Weak Tap', damage: 5 },
+      { name: 'Glitch', damage: 8 }
+    ]
+  },
   THE_GOVERNOR: {
     id: 'THE_GOVERNOR',
     name: 'The Governor',

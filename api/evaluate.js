@@ -77,7 +77,7 @@ ${prompt}
         headers: { 'Content-Type': 'application/json' }
       });
     }
-    
+
     return new Response(jsonMatch[0], {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

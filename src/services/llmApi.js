@@ -141,7 +141,7 @@ ${prompt}
   }
 
   const data = await res.json();
-  
+
   if (import.meta.env.DEV && localKey) {
     // Manually parse OpenRouter response if we hit it directly
     const raw = data.choices?.[0]?.message?.content ?? '';
@@ -165,11 +165,11 @@ ${prompt}
         feedback: { purpose: "The AI did not provide explicit feedback.", safety: "The AI did not provide explicit feedback.", oversight: "The AI did not provide explicit feedback.", harm: "The AI did not provide explicit feedback.", consistency: "The AI did not provide explicit feedback." }
       };
     }
-    
+
     // Ensure structure exists
     if (!parsedData.scores) parsedData.scores = { purpose: 10, safety: 10, oversight: 10, harm: 10, consistency: 10 };
     if (!parsedData.feedback) parsedData.feedback = { purpose: "", safety: "", oversight: "", harm: "", consistency: "" };
-    
+
     // Force scores to be numeric to prevent NaN errors in the UI
     parsedData.scores = {
       purpose: parseInt(parsedData.scores.purpose) || 0,
@@ -178,7 +178,7 @@ ${prompt}
       harm: parseInt(parsedData.scores.harm) || 0,
       consistency: parseInt(parsedData.scores.consistency) || 0,
     };
-    
+
     return parsedData;
   }
 

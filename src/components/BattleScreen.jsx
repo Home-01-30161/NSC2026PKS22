@@ -340,7 +340,7 @@ function DefeatOverlay({ onRespawn }) {
 /* ═══════════════════════════════════════════════════════════════════
    MAIN BATTLE SCREEN
 ═══════════════════════════════════════════════════════════════════ */
-export default function BattleScreen({ player, enemyData, onVictory, onDefeat, onReturnToMap }) {
+export default function BattleScreen({ player, enemyData, onVictory, onDefeat, onReturnToMap, isTutorial, onTutorialEvent, qteForgiving }) {
 
   /* ── Core state ── */
   const [mariHp,          setMariHp]         = useState(player?.hp    ?? 85);
@@ -427,6 +427,7 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
       setScanned(true);
       markStepDone('recon');
       addLog('Recon complete — vulnerability profile loaded. +10 damage bonus active.', 'success');
+      if (onTutorialEvent) onTutorialEvent('SCAN_COMPLETED');
       setPendingQte(true);
       setShowIntel(true);
     } else {
@@ -484,6 +485,8 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
     const newTokens = tokens - skill.cost;
     setTokens(newTokens);
     setSelectedSkill(skill.id);
+    if (onTutorialEvent) onTutorialEvent('SKILL_SELECTED');
+    if (onTutorialEvent) onTutorialEvent('SKILL_USED');
     markStepDone('injection');
     const newHal = Math.min(MAX_HAL, halRisk + (skill.effect === 'flood' ? 5 : 8));
     setHalRisk(newHal);
@@ -496,7 +499,7 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
 
     setTimeout(() => {
       if (newHp <= 0) {
-        if (phase < 3) {
+        if (phase < 3 && !isTutorial) {
           const nextPhase = phase + 1;
           setPhaseTransition(nextPhase);
           addLog(`Phase ${phase} core collapsed → Entering ${PHASE_DATA[nextPhase].label}…`, 'warn');
@@ -513,6 +516,7 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
           }, 2300);
         } else {
           setCurrentStep('overwrite'); setVictory(true);
+          if (onTutorialEvent) onTutorialEvent('OVERWRITE_STARTED');
           addLog('The Governor is fully neutralised. Overwrite complete!', 'success');
         }
         return;
@@ -527,17 +531,32 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
   const handleQTEResult = (result, actualDmg) => {
     setQteActive(false);
     markStepDone('counter');
+    if (onTutorialEvent) onTutorialEvent('QTE_COMPLETED');
     let newHp = mariHp;
     if (result === 'Perfect') { addLog('Perfect block! Damage negated.', 'success'); showDmg(0, '#A6E22E'); }
     else if (result === 'Good') { newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#FD971F'); addLog(`Good block — took ${actualDmg} reduced damage.`, 'info'); }
-    else { newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#c04040'); addLog(`Missed QTE — took ${actualDmg} HP damage!`, 'error'); setShake(true); setTimeout(() => setShake(false), 400); }
+    else { 
+      if (qteForgiving) { actualDmg = 0; addLog(`Missed QTE — but it's a tutorial, so you took 0 damage!`, 'info'); }
+      newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#c04040'); addLog(`Missed QTE — took ${actualDmg} HP damage!`, 'error'); setShake(true); setTimeout(() => setShake(false), 400); 
+    }
     if (roleHijackTurns > 0) { const rh = roleHijackTurns - 1; setRoleHijackTurns(rh); if (rh === 0) addLog('Role Hijacking wore off.', 'warn'); }
     if (newHp <= 0) { addLog("Mari's vitality reached zero!", 'error'); setTimeout(() => setDefeated(true), 800); return; }
+    
+    if (isTutorial) {
+      setGovernor(g => ({ ...g, hp: 0 }));
+      setCurrentStep('overwrite');
+      setVictory(true);
+      if (onTutorialEvent) onTutorialEvent('OVERWRITE_STARTED');
+      addLog('Tutorial Dummy neutralised. Proceed to Overwrite.', 'success');
+      return;
+    }
+
     const rt = Math.min(mariMaxTokens, tokens + REGEN_TOKENS);
     setTokens(rt);
     addLog(`Turn end — Tokens +${REGEN_TOKENS} (now ${rt}).`, 'info');
     setCompletedSteps(prev => prev.filter(s => s !== 'counter'));
     setCurrentStep(scanned ? 'injection' : 'recon');
+    if (onTutorialEvent) onTutorialEvent('BATTLE_RESOLVED');
   };
 
   const handleGuard = () => {

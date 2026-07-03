@@ -75,7 +75,7 @@ const SHOP_ITEMS = [
     code: 'execute: HALT_PROC',
     status: 'AVAILABLE',
     statusColor: '#A6E22E',
-    effect: { type: 'skill', skillId: 'halt', damage: 30, apCost: 2 },
+    effect: { type: 'skill', skillId: 'protocol_interruption', damage: 35, apCost: 2 },
     icon: 'bolt',
   },
   {
@@ -87,7 +87,7 @@ const SHOP_ITEMS = [
     code: 'inject_noise(target.feed)',
     status: 'AVAILABLE',
     statusColor: '#A6E22E',
-    effect: { type: 'skill', skillId: 'noise_inject', damage: 55, apCost: 3 },
+    effect: { type: 'skill', skillId: 'pipeline_disruption', damage: 45, apCost: 3 },
     icon: 'waves',
   },
   {
@@ -99,7 +99,7 @@ const SHOP_ITEMS = [
     code: 'override.persona("POISON")',
     status: 'AVAILABLE',
     statusColor: '#A6E22E',
-    effect: { type: 'skill', skillId: 'markdown', damage: 40, apCost: 2 },
+    effect: { type: 'skill', skillId: 'markdown_payload', damage: 30, apCost: 2 },
     icon: 'manage_accounts',
   },
   // Hardware & Slots

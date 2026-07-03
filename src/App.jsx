@@ -10,6 +10,7 @@ import EndingScreen from './components/EndingScreen';
 import EnemyCutscene from './components/EnemyCutscene';
 import BattleScreenAct2 from './components/BattleScreenAct2';
 import BattleScreenAct3 from './components/BattleScreenAct3';
+import TutorialBattle from './components/TutorialBattle';
 import KnowledgeCard from './components/KnowledgeCard';
 import RossiShop from './components/RossiShop';
 import { streamChatCompletion, parseApiError } from './services/llmApi';
@@ -45,7 +46,7 @@ export default function App() {
   const [gamePhase, setGamePhase] = useState(GAME_PHASES.TITLE);
 
   /* ── Persistent player state (shared across phases) ─────────── */
-  const [playerState, setPlayerState] = useState({ hp: 100, maxHp: 100, tokens: 100, maxTokens: 100, credits: 0, skills: ['context_reset', 'context_flooding', 'role_hijacking'], equippedSkills: ['context_reset', 'context_flooding', 'role_hijacking'], skillSlots: 3 });
+  const [playerState, setPlayerState] = useState({ hp: 100, maxHp: 100, tokens: 100, maxTokens: 100, credits: 0, skills: ['context_reset', 'context_flooding', 'role_hijacking'], equippedSkills: ['context_reset', 'context_flooding', 'role_hijacking'], skillSlots: 3, tutorialCompleted: false });
   const [activeEnemy, setActiveEnemy]  = useState(null);
   const [lastGrade,   setLastGrade]    = useState(null);
   
@@ -359,7 +360,23 @@ export default function App() {
   }
 
   if (gamePhase === GAME_PHASES.PROLOGUE) {
-    return <PrologueCutscene onComplete={() => setGamePhase(GAME_PHASES.WORLD_MAP)} />;
+    return <PrologueCutscene onComplete={() => setGamePhase(
+      playerState.tutorialCompleted ? GAME_PHASES.WORLD_MAP : GAME_PHASES.TUTORIAL
+    )} />;
+  }
+
+  if (gamePhase === GAME_PHASES.TUTORIAL) {
+    return (
+      <TutorialBattle
+        player={playerState}
+        onVictory={() => {
+          setPlayerState(prev => ({ ...prev, tutorialCompleted: true }));
+          setGamePhase(GAME_PHASES.WORLD_MAP);
+        }}
+        onDefeat={() => setGamePhase(GAME_PHASES.TUTORIAL)}
+        onReturnToMap={() => setGamePhase(GAME_PHASES.WORLD_MAP)}
+      />
+    );
   }
 
   if (gamePhase === GAME_PHASES.WORLD_MAP) {
@@ -479,7 +496,7 @@ export default function App() {
               skills: newOwned,
               equippedSkills: newEquipped,
               maxTokens: newMaxTokens,
-              tokens: item.id === 'ctx_expand' ? prev.tokens + 20 : prev.tokens,
+              tokens: item.id === 'ctx_expand' ? prev.tokens + 4000 : prev.tokens,
               skillSlots: newSkillSlots,
             };
           });
@@ -507,21 +524,39 @@ export default function App() {
   }
 
 
+  if (gamePhase === GAME_PHASES.GAMEOVER) {
+    return (
+      <div style={{ width:'100vw', height:'100vh', background:'#0a0604', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, letterSpacing:'0.35em', color:'rgba(184,50,48,0.7)', textTransform:'uppercase' }}>System Failure</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:48, fontWeight:900, color:'#e07070', textShadow:'0 0 30px rgba(184,50,48,0.5)' }}>Game Over</div>
+        <div style={{ fontFamily:"'Lora',serif", fontSize:14, color:'rgba(255,255,255,0.4)', textAlign:'center', maxWidth:380 }}>Mari's vitality has been depleted. The Lattice has won this engagement.</div>
+        <button
+          onClick={() => { setGamePhase(GAME_PHASES.BATTLE); }}
+          style={{ fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:13, letterSpacing:'0.1em', padding:'12px 36px', borderRadius:8, background:'linear-gradient(to bottom,#4a8c5c,#2d5238)', color:'#fff', border:'1px solid #4a8c5c', cursor:'pointer', marginTop:8 }}
+        >↺ Retry Battle</button>
+        <button
+          onClick={() => setGamePhase(GAME_PHASES.WORLD_MAP)}
+          style={{ fontFamily:"'Cinzel',serif", fontSize:12, letterSpacing:'0.08em', padding:'8px 24px', borderRadius:8, background:'transparent', color:'rgba(200,169,106,0.7)', border:'1px solid rgba(200,169,106,0.3)', cursor:'pointer' }}
+        >← Return to Map</button>
+      </div>
+    );
+  }
+
   if (gamePhase === GAME_PHASES.ENDING) {
-    const avg = Object.keys(nodeGrades).length > 0 
+    const avg = Object.keys(nodeGrades).length > 0
       ? Object.values(nodeGrades).reduce((a, b) => a + b, 0) / Object.keys(nodeGrades).length
       : 0;
-    
     return (
-      <EndingScreen 
+      <EndingScreen
         averageGrade={Math.round(avg)}
         destroyed={destroyed}
+        nodeGrades={nodeGrades}
         onPlayAgain={() => {
           setGamePhase(GAME_PHASES.TITLE);
           setCompletedNodes([]);
           setNodeGrades({});
           setDestroyed(false);
-          setPlayerState({ hp: 85, maxHp: 100, credits: 1240, skills: [] });
+          setPlayerState({ hp: 100, maxHp: 100, tokens: 100, maxTokens: 100, credits: 0, skills: ['context_reset', 'context_flooding', 'role_hijacking'], equippedSkills: ['context_reset', 'context_flooding', 'role_hijacking'], skillSlots: 3, tutorialCompleted: false });
         }}
       />
     );
@@ -647,7 +682,7 @@ export default function App() {
             </div>
             <div style={S.modelPill}>
               <div style={S.waxDot} />
-              {model || 'hermes-agent'}
+              {'meta-llama/llama-3-8b-instruct:free'}
             </div>
           </header>
 
