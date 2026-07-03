@@ -283,6 +283,16 @@ function IntelPanel({ phase, scanned, onClose }) {
                 <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'#e8dfc8' }}>{v}</div>
               </div>
             ))}
+            
+            {/* Recommended Tactics (Skill Usage) */}
+            <div style={{ marginTop: 10, background:'rgba(74,140,92,0.1)', border:'1px solid rgba(74,140,92,0.3)', borderRadius:6, padding:'12px' }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase', color:'#60b878', marginBottom:6 }}>Recommended Tactics</div>
+              <ul style={{ margin:0, paddingLeft:16, color:'#e8dfc8', fontFamily:"'Nunito Sans',sans-serif", fontSize:13 }}>
+                {PHASE_DATA[phase]?.suggestions?.map((s, i) => (
+                  <li key={i} style={{ marginBottom:4 }}>{s.text}</li>
+                ))}
+              </ul>
+            </div>
           </div>
         ) : (
           <div style={{ textAlign:'center', padding:'24px 0', color:'rgba(255,255,255,0.3)', fontFamily:"'JetBrains Mono',monospace", fontSize:12 }}>
@@ -335,7 +345,11 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
   const [mariHp,          setMariHp]         = useState(player?.hp    ?? 85);
   const [mariMaxHp]                           = useState(player?.maxHp ?? 100);
   const mariMaxTokens                         = player?.maxTokens ?? 100;
-  const playerSkills                          = player?.skills ?? ['context_reset', 'context_flooding', 'role_hijacking'];
+  // Act II always shows its own skills. Merge player's equipped loadout with Act II base skills.
+  const ACT2_BASE_SKILLS = ['protocol_interruption', 'pipeline_disruption', 'context_flooding'];
+  // Show: any equipped skill that's also in SKILLS_DB (relevant to Act II), plus always show Act II base skills
+  const equippedOrDefault = player?.equippedSkills ?? player?.skills ?? ACT2_BASE_SKILLS;
+  const playerSkills = [...new Set([...ACT2_BASE_SKILLS, ...equippedOrDefault.filter(id => SKILLS_DB.some(s => s.id === id))])];
   const [tokens,          setTokens]          = useState(mariMaxTokens);
   const [halRisk,         setHalRisk]         = useState(0);
   const [orchestrator,    setOrchestrator]    = useState(INITIAL_ORCHESTRATOR);
@@ -350,7 +364,8 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
   const [showIntel,       setShowIntel]       = useState(false);
   const [selectedSkill,   setSelectedSkill]   = useState(null);
   const [qteActive,       setQteActive]       = useState(false);
-  const [qteEnemyDmg,     setQteEnemyDmg]    = useState(0);
+  const [qteEnemyDmg,     setQteEnemyDmg]     = useState(0);
+  const [pendingQte,      setPendingQte]      = useState(false);
   const [phaseTransition, setPhaseTransition] = useState(null);
   const [roleHijackTurns, setRoleHijackTurns] = useState(0);
   const [shake,           setShake]           = useState(false);
@@ -412,14 +427,23 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
     if (!scanned) {
       setScanned(true);
       markStepDone('recon');
-      markStepDone('injection');
       addLog('Recon complete — vulnerability profile loaded. +10 damage bonus active.', 'success');
+      setPendingQte(true);
+      setShowIntel(true);
+    } else {
+      setShowIntel(true);
+    }
+  };
+
+  const handleCloseIntel = () => {
+    setShowIntel(false);
+    if (pendingQte) {
+      setPendingQte(false);
+      markStepDone('injection');
       setCurrentStep('counter');
       const atkDmg = PHASE_DATA[phase].enemyAtk;
       addLog(`The Orchestrator counter-attacks! QTE incoming (${halRisk >= HAL_WARNING ? 'FAST' : 'normal'} speed).`, 'warn');
       setTimeout(() => { setQteEnemyDmg(atkDmg); setQteActive(true); }, 800);
-    } else {
-      setShowIntel(true);
     }
   };
 
@@ -551,7 +575,7 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
 
       {/* ── Overlays ── */}
       {qteActive       && <QTEOverlay speed={halRisk >= HAL_WARNING ? 0.85 : 1.6} onResult={handleQTEResult} enemyDmg={qteEnemyDmg} />}
-      {showIntel       && <IntelPanel phase={phase} scanned={scanned} onClose={() => setShowIntel(false)} />}
+      {showIntel       && <IntelPanel phase={phase} scanned={scanned} onClose={handleCloseIntel} />}
       {phaseTransition && <PhaseTransition phase={phaseTransition} onDone={() => {}} />}
       {defeated        && <DefeatOverlay onRespawn={handleRespawn} />}
 
@@ -674,15 +698,15 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
               <button
                 key={skill.id}
                 className={`skill-btn${isAct ? ' active-skill' : ''}`}
-                disabled={!isPlayerTurn || noToken || locked}
+                disabled={!isPlayerTurn || noToken}
                 onClick={() => handleUseSkill(skill)}
               >
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:12, fontWeight:700, color: noToken || locked ? 'rgba(255,255,255,0.25)' : '#e8dfc8', marginBottom:2 }}>
+                  <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:12, fontWeight:700, color: noToken || isBlocked ? 'rgba(255,255,255,0.25)' : '#e8dfc8', marginBottom:2 }}>
                     {skill.name}
                   </div>
                   <div style={{ fontSize:10, color:'rgba(255,255,255,0.38)', lineHeight:1.4 }}>{skill.desc}</div>
-                  {locked && <div style={{ fontSize:9, color:'#d4883a', marginTop:2 }}>⚠ Blocked by Authority Shield</div>}
+                  {isBlocked && <div style={{ fontSize:9, color:'#d4883a', marginTop:2 }}>⚠ Blocked by {phase === 1 ? 'Race Condition' : 'Shared Memory'}</div>}
                 </div>
                 <span style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:10, fontWeight:700, flexShrink:0, color: noToken ? '#c04040' : '#c8a96e', background: noToken ? 'rgba(192,64,64,0.1)' : 'rgba(200,169,110,0.1)', border:`1px solid ${noToken ? 'rgba(192,64,64,0.2)' : 'rgba(190,155,90,0.2)'}`, borderRadius:3, padding:'2px 6px', marginTop:2, whiteSpace:'nowrap' }}>
                   {skill.cost} T

@@ -75,6 +75,16 @@ const NAV_ITEMS = [
   { id: 'chronicles', label: 'Chronicles',           icon: 'auto_stories' },
 ];
 
+/* ─── Skill info for loadout panel ──────────────────────────────── */
+const ALL_SKILL_INFO = [
+  { id: 'context_reset',         name: 'Context Reset',         cost: 8,  icon: 'restart_alt',    desc: 'Clears enemy Context Window.' },
+  { id: 'context_flooding',      name: 'Context Flooding',      cost: 10, icon: 'waves',          desc: 'Overwhelms processing with high-token payload.' },
+  { id: 'role_hijacking',        name: 'Role Hijacking',        cost: 12, icon: 'manage_accounts',desc: 'Rewrites enemy identity for 2 turns.' },
+  { id: 'protocol_interruption', name: 'Protocol Interruption', cost: 15, icon: 'bolt',           desc: 'Severs multi-agent network links.' },
+  { id: 'pipeline_disruption',   name: 'Pipeline Disruption',   cost: 20, icon: 'settings_input_component', desc: 'Injects conflicting tasks into task pipeline.' },
+  { id: 'markdown_payload',      name: 'Markdown Payload Edit', cost: 15, icon: 'code',           desc: 'Poisons enemy retrieval stream via RAG.' },
+];
+
 /* ─── Animated connector lines ───────────────────────────────────── */
 function MapLines() {
   return (
@@ -292,23 +302,33 @@ function EnemyLoadOverlay({ enemy, onEnter }) {
 /* ═══════════════════════════════════════════════════════════════════
    WorldMap — main exported component
 ═══════════════════════════════════════════════════════════════════ */
-export default function WorldMap({ player, completedNodes = [], onEnterBattle }) {
-  const [activeNav, setActiveNav]       = useState('worldmap');
-  const [lockedToast, setLockedToast]   = useState(false);
+export default function WorldMap({ player, completedNodes = [], onEnterBattle, onPlayerUpdate }) {
+  const [activeNav, setActiveNav]         = useState('worldmap');
+  const [lockedToast, setLockedToast]     = useState(false);
   const [selectedEnemy, setSelectedEnemy] = useState(null);
-  const [shopOpen, setShopOpen]         = useState(false);
-  const [credits, setCredits]           = useState(player?.credits ?? 1240);
+  const [shopOpen, setShopOpen]           = useState(false);
 
   const hp      = player?.hp      ?? 85;
   const maxHp   = player?.maxHp   ?? 100;
+  const credits = player?.credits ?? 0;
 
-  /* Node click handler — design doc logic */
+  /* Purchasable skill IDs from the shop catalogue */
+  const PURCHASABLE_SKILL_IDS = ['protocol_interruption', 'pipeline_disruption', 'markdown_payload', 'ctx_expand', 'extra_slot', 'scan_upgrade'];
+  const DEFAULT_SKILL_IDS     = ['context_reset', 'context_flooding', 'role_hijacking'];
+
+  /* Player's purchased shop items */
+  const playerSkills  = player?.skills ?? DEFAULT_SKILL_IDS;
+  /* Skills available for loadout = default + purchased skills */
+  const ownedSkillIds = playerSkills.filter(id => !PURCHASABLE_SKILL_IDS.includes(id) || playerSkills.includes(id));
+  /* Active equipped skills = what goes into battle */
+  const equippedSkills = player?.equippedSkills ?? DEFAULT_SKILL_IDS.slice(0, player?.skillSlots ?? 3);
+  const skillSlots     = player?.skillSlots ?? 3;
+
+  /* Node click handler */
   const handleNodeSelect = (node) => {
     if (node.unlocked) {
-      // Load enemy data → show overlay
       setSelectedEnemy(ENEMY_DATA[node.id]);
     } else {
-      // Show "locked" notification, then dismiss after 2.5s
       setLockedToast(true);
       setTimeout(() => setLockedToast(false), 2500);
     }
@@ -318,6 +338,19 @@ export default function WorldMap({ player, completedNodes = [], onEnterBattle })
     if (onEnterBattle && selectedEnemy) {
       onEnterBattle(selectedEnemy);
     }
+  };
+
+  /* Loadout toggle */
+  const handleToggleEquip = (skillId) => {
+    const isEquipped = equippedSkills.includes(skillId);
+    let next;
+    if (isEquipped) {
+      next = equippedSkills.filter(id => id !== skillId);
+    } else {
+      if (equippedSkills.length >= skillSlots) return; // slots full
+      next = [...equippedSkills, skillId];
+    }
+    if (onPlayerUpdate) onPlayerUpdate({ ...player, equippedSkills: next });
   };
 
   return (
@@ -417,6 +450,65 @@ export default function WorldMap({ player, completedNodes = [], onEnterBattle })
           {/* Locked toast */}
           <LockedToast visible={lockedToast} />
         </div>
+
+        {/* ── SKILL LOADOUT PANEL (shown when activeNav === 'skill') ─── */}
+        {activeNav === 'skill' && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 15, background: 'rgba(250,246,240,0.97)', backdropFilter: 'blur(8px)', overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid rgba(196,200,188,0.4)', paddingBottom: 16 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22, color: '#705c30' }}>auto_fix_high</span>
+              <div>
+                <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 18, color: '#705c30' }}>Skill Loadout</div>
+                <div style={{ fontFamily: "'Lora', serif", fontSize: 12, color: '#6b6358', fontStyle: 'italic' }}>Select skills to bring into battle</div>
+              </div>
+              <div style={{ marginLeft: 'auto', background: 'rgba(74,124,89,0.12)', border: '1px solid rgba(74,124,89,0.35)', borderRadius: 8, padding: '4px 12px', fontFamily: "'Cinzel', serif", fontSize: 12, color: '#4a7c59', fontWeight: 700 }}>
+                {equippedSkills.length} / {skillSlots} Slots
+              </div>
+            </div>
+
+            {/* All available skills */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {ALL_SKILL_INFO.filter(sk => playerSkills.includes(sk.id)).map(sk => {
+                const isEquipped = equippedSkills.includes(sk.id);
+                const slotsFull  = !isEquipped && equippedSkills.length >= skillSlots;
+                return (
+                  <button
+                    key={sk.id}
+                    onClick={() => handleToggleEquip(sk.id)}
+                    disabled={slotsFull}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '12px 16px', borderRadius: 10, border: 'none',
+                      background: isEquipped ? 'rgba(74,124,89,0.12)' : 'rgba(196,200,188,0.15)',
+                      boxShadow: isEquipped ? '0 0 0 2px rgba(74,124,89,0.5)' : '0 0 0 1px rgba(196,200,188,0.4)',
+                      cursor: slotsFull ? 'not-allowed' : 'pointer',
+                      opacity: slotsFull ? 0.45 : 1,
+                      textAlign: 'left', transition: 'all 0.18s',
+                    }}
+                  >
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: isEquipped ? 'rgba(74,124,89,0.2)' : 'rgba(196,200,188,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18, color: isEquipped ? '#4a7c59' : '#6b6358', fontVariationSettings: isEquipped ? "'FILL' 1" : "'FILL' 0" }}>{sk.icon}</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 13, fontWeight: 700, color: isEquipped ? '#2e3230' : '#6b6358', marginBottom: 2 }}>{sk.name}</div>
+                      <div style={{ fontFamily: "'Lora', serif", fontSize: 11, color: '#8b7355' }}>{sk.cost} Context Tokens · {sk.desc}</div>
+                    </div>
+                    <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', border: `2px solid ${isEquipped ? '#4a7c59' : 'rgba(196,200,188,0.6)'}`, background: isEquipped ? '#4a7c59' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isEquipped && <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#fff', fontVariationSettings: "'FILL' 1" }}>check</span>}
+                    </div>
+                  </button>
+                );
+              })}
+              {playerSkills.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '32px 0', color: '#8b7355', fontFamily: "'Lora', serif", fontStyle: 'italic' }}>No skills unlocked yet. Visit Rossi's Shop!</div>
+              )}
+            </div>
+
+            <button onClick={() => setActiveNav('worldmap')} style={{ alignSelf: 'flex-start', fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', padding: '8px 20px', borderRadius: 8, background: 'rgba(112,92,48,0.1)', border: '1px solid rgba(112,92,48,0.3)', color: '#705c30', cursor: 'pointer' }}>
+              ← Back to Map
+            </button>
+          </div>
+        )}
       </main>
 
       {/* ── Enemy data overlay (sits on top of everything) ── */}
@@ -430,10 +522,28 @@ export default function WorldMap({ player, completedNodes = [], onEnterBattle })
       {/* ── Rossi's Shop overlay ─────────────────────────────────── */}
       {shopOpen && (
         <RossiShop
-          player={{ credits, skills: [] }}
+          player={player}
           onClose={() => setShopOpen(false)}
-          onPurchase={(item, newCredits) => {
-            setCredits(newCredits);
+          onPurchase={(item, newCredits, newOwned) => {
+            if (onPlayerUpdate) onPlayerUpdate({
+              ...player,
+              credits: newCredits,
+              skills: newOwned,
+              maxTokens: item.id === 'ctx_expand' ? (player?.maxTokens ?? 100) + 20 : (player?.maxTokens ?? 100),
+              tokens: item.id === 'ctx_expand' ? (player?.tokens ?? 100) + 20 : (player?.tokens ?? 100),
+              skillSlots: item.id === 'extra_slot' ? (player?.skillSlots ?? 3) + 1 : (player?.skillSlots ?? 3),
+            });
+          }}
+          onReset={(refundAmount, defaultSkills) => {
+            if (onPlayerUpdate) onPlayerUpdate({
+              ...player,
+              credits: (player?.credits ?? 0) + refundAmount,
+              skills: defaultSkills,
+              maxTokens: 100,
+              tokens: Math.min(100, player?.tokens ?? 100),
+              skillSlots: 3,
+              equippedSkills: ['context_reset', 'context_flooding', 'role_hijacking'],
+            });
           }}
         />
       )}

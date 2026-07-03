@@ -45,7 +45,7 @@ export default function App() {
   const [gamePhase, setGamePhase] = useState(GAME_PHASES.TITLE);
 
   /* ── Persistent player state (shared across phases) ─────────── */
-  const [playerState, setPlayerState] = useState({ hp: 100, maxHp: 100, tokens: 100, maxTokens: 100, credits: 0, skills: ['context_reset', 'context_flooding', 'role_hijacking'], skillSlots: 3 });
+  const [playerState, setPlayerState] = useState({ hp: 100, maxHp: 100, tokens: 100, maxTokens: 100, credits: 0, skills: ['context_reset', 'context_flooding', 'role_hijacking'], equippedSkills: ['context_reset', 'context_flooding', 'role_hijacking'], skillSlots: 3 });
   const [activeEnemy, setActiveEnemy]  = useState(null);
   const [lastGrade,   setLastGrade]    = useState(null);
   
@@ -367,6 +367,7 @@ export default function App() {
       <WorldMap
         player={playerState}
         completedNodes={completedNodes}
+        onPlayerUpdate={(newPlayer) => setPlayerState(prev => ({ ...prev, ...newPlayer }))}
         onEnterBattle={(enemyData) => {
           setActiveEnemy(enemyData);
           setGamePhase(GAME_PHASES.ENEMY_CUTSCENE);
@@ -464,13 +465,34 @@ export default function App() {
       <RossiShop 
         player={playerState}
         onPurchase={(item, newCredits, newOwned) => {
-          setPlayerState(prev => ({ 
-            ...prev, 
-            credits: newCredits, 
-            skills: newOwned,
-            maxTokens: item.id === 'ctx_expand' ? prev.maxTokens + 20 : prev.maxTokens,
-            tokens: item.id === 'ctx_expand' ? prev.tokens + 20 : prev.tokens,
-            skillSlots: item.id === 'extra_slot' ? prev.skillSlots + 1 : prev.skillSlots
+          setPlayerState(prev => {
+            const newSkillSlots  = item.id === 'extra_slot'  ? prev.skillSlots + 1 : prev.skillSlots;
+            const newMaxTokens   = item.id === 'ctx_expand'  ? prev.maxTokens + 20 : prev.maxTokens;
+            // Auto-equip the new skill if a slot is free (skills only, not hardware)
+            let newEquipped = [...(prev.equippedSkills ?? prev.skills ?? [])];
+            if (item.effect?.type === 'skill' && newEquipped.length < newSkillSlots && !newEquipped.includes(item.id)) {
+              newEquipped = [...newEquipped, item.id];
+            }
+            return {
+              ...prev,
+              credits: newCredits,
+              skills: newOwned,
+              equippedSkills: newEquipped,
+              maxTokens: newMaxTokens,
+              tokens: item.id === 'ctx_expand' ? prev.tokens + 20 : prev.tokens,
+              skillSlots: newSkillSlots,
+            };
+          });
+        }}
+        onReset={(refundAmount, defaultSkills) => {
+          setPlayerState(prev => ({
+            ...prev,
+            credits: prev.credits + refundAmount,
+            skills: defaultSkills,
+            equippedSkills: ['context_reset', 'context_flooding', 'role_hijacking'],
+            maxTokens: 100,
+            tokens: Math.min(100, prev.tokens),
+            skillSlots: 3,
           }));
         }}
         onClose={() => {
@@ -483,6 +505,7 @@ export default function App() {
       />
     );
   }
+
 
   if (gamePhase === GAME_PHASES.ENDING) {
     const avg = Object.keys(nodeGrades).length > 0 

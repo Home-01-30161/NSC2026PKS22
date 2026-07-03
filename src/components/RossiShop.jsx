@@ -221,7 +221,7 @@ function ShopCard({ item, credits, owned, onBuy }) {
      onClose     : () => void
      onPurchase  : (item, newCredits, newSkills) => void
 ═══════════════════════════════════════════════════════════════════ */
-export default function RossiShop({ player, onClose, onPurchase }) {
+export default function RossiShop({ player, onClose, onPurchase, onReset }) {
   const [credits, setCredits]         = useState(player?.credits  ?? 0);
   const [owned,   setOwned]           = useState(player?.skills   ?? []);
   const [toast,   setToast]           = useState(null);      // { message, type }
@@ -247,6 +247,33 @@ export default function RossiShop({ player, onClose, onPurchase }) {
 
     // Propagate to parent
     if (onPurchase) onPurchase(item, newCredits, newOwned);
+  };
+
+  const handleReset = () => {
+    let refund = 0;
+    const defaultSkills = [];
+    owned.forEach(skillId => {
+      const item = SHOP_ITEMS.find(i => i.id === skillId);
+      if (item) {
+        refund += item.price;
+      } else {
+        defaultSkills.push(skillId);
+      }
+    });
+
+    if (refund === 0) {
+      showToast('No purchases to reset.', 'error');
+      return;
+    }
+
+    const newCredits = credits + refund;
+    setCredits(newCredits);
+    setOwned(defaultSkills);
+    setCreditAnim(true);
+    setTimeout(() => setCreditAnim(false), 600);
+    showToast(`Refunded ${refund} CR. Purchases reset.`, 'success');
+
+    if (onReset) onReset(refund, defaultSkills);
   };
 
   const showToast = (message, type) => {
@@ -327,8 +354,11 @@ export default function RossiShop({ player, onClose, onPurchase }) {
             );
           })}
 
-          {/* Return to map button */}
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 16 }}>
+          {/* Action buttons */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, paddingTop: 8, paddingBottom: 16 }}>
+            <button className="copper-btn" onClick={handleReset} style={{ padding: '10px 40px', fontSize: 12, background: 'linear-gradient(to bottom, #f2c7c7, #e08b8b)' }}>
+              ↺ Reset Purchases
+            </button>
             <button className="copper-btn" onClick={onClose} style={{ padding: '10px 40px', fontSize: 12 }}>
               ← Return to World Map
             </button>

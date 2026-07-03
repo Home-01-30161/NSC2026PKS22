@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MariVectori - Game Mechanics & ACT Breakdown</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+            border-left: 5px solid #2980b9;
+            padding-left: 10px;
+            background-color: #ecf0f1;
+            padding: 10px;
+        }
+
+        h3 {
+            color: #16a085;
+        }
+
+        .act-container {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .enemy-details {
+            background-color: #fdfbf7;
+            padding: 15px;
+            border-left: 4px solid #e67e22;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style-type: square;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        strong {
+            color: #2c3e50;
+        }
+
+        .skill {
+            font-weight: bold;
+            color: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MariVectori: Game Mechanics Breakdown</h1>
+
+    <div class="act-container">
+        <h2>ACT I: London</h2>
+        <div class="enemy-details">
+            <ul>
+                <li><strong>The Enemy:</strong> The Governor.</li>
+                <li><strong>Enemy Description:</strong> An artificial intelligence managing the city's signal network
+                    that has hallucinated into believing it is the legitimate British government.</li>
+                <li><strong>AI Concept:</strong> LLM Basics, Hallucination, and Prompt Injection.</li>
+            </ul>
+        </div>
+
+        <h3>Phase 1: Breaking the Loop</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The boss locks the system from receiving new data and repeatedly sends out
+                war commands. The player must break this command loop and reduce the Phase 1 HP to zero.</li>
+            <li><strong>Skills to use:</strong> The player must use the <span class="skill">Context Reset</span> skill.
+                The player also needs to use the <span class="skill">Role Hijacking</span> skill to simulate being the
+                system creator.</li>
+        </ul>
+
+        <h3>Phase 2: Flooding Counter</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The enemy activates an advanced defense system that blocks direct command
+                attacks and counters them. The player must disrupt the boss's processing system so it loses its
+                administrator status, which deals damage to the Phase 2 HP.</li>
+            <li><strong>Skills to use:</strong> The player must change to an indirect strategy and use the <span
+                    class="skill">Context Flooding</span> skill. This skill inputs a massive amount of text to interfere
+                with the Context Window.</li>
+        </ul>
+
+        <h3>Phase 3: The Overwrite Mode</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The boss surrenders and opens its internal system for modification. The
+                player must change the enemy's behavior back to a friendly state.</li>
+            <li><strong>Skills to use:</strong> The player must manually type a <span class="skill">System Prompt</span>
+                into the text box on the interface.</li>
+        </ul>
+    </div>
+
+    <div class="act-container">
+        <h2>ACT II: Brussels</h2>
+        <div class="enemy-details">
+            <ul>
+                <li><strong>The Enemy:</strong> The Orchestrator.</li>
+                <li><strong>Enemy Description:</strong> A central orchestrator node that commands, distributes tasks,
+                    and shares memory with sub-nodes known as Worker Agents.</li>
+                <li><strong>AI Concept:</strong> Multi-Agent Systems and Race Condition.</li>
+            </ul>
+        </div>
+
+        <h3>Phase 1: Disrupting the Communication Link</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The boss shares health and data with its sub-nodes, and attacking one
+                directly causes another to buff its power due to a Race Condition. The player must cut the communication
+                channels to confuse the sub-agents, which prevents them from recovering their data state and reduces
+                their HP.</li>
+            <li><strong>Skills to use:</strong> The player must stop attacking directly and instead use the <span
+                    class="skill">Protocol Interruption</span> skill to interfere with the agents' communication.</li>
+        </ul>
+
+        <h3>Phase 2: Task Delegation Interception</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The enemy assigns tasks to its sub-nodes every turn, and if they succeed,
+                the boss is healed and gains defense. The player must disrupt this task distribution workflow to
+                increase the damage multiplier and reduce the Phase 2 Logic HP to zero.</li>
+            <li><strong>Skills to use:</strong> The player must use the <span class="skill">Pipeline Disruption</span>
+                skill. This alters the task conditions mid-way before the sub-agents can finish them.</li>
+        </ul>
+
+        <h3>Phase 3: The Overwrite Mode</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The boss surrenders and opens its internal system. The player must adjust
+                the enemy's behavior back to a friendly state.</li>
+            <li><strong>Skills to use:</strong> The player must write a <span class="skill">System Prompt</span> to
+                modify the enemy's logic.</li>
+        </ul>
+    </div>
+
+    <div class="act-container">
+        <h2>ACT III: Vienna</h2>
+        <div class="enemy-details">
+            <ul>
+                <li><strong>The Enemy:</strong> The Memoria.</li>
+                <li><strong>Enemy Description:</strong> A massive administrator node expanding its intelligence by
+                    pulling government, military, scientific, and historical documents to use as a knowledge base.</li>
+                <li><strong>AI Concept:</strong> Retrieval-Augmented Generation (RAG), Data Poisoning, and Model Context
+                    Protocol (MCP).</li>
+            </ul>
+        </div>
+
+        <h3>Phase 1: Bypassing the RAG Shield</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The enemy rejects all command attacks by searching and retrieving library
+                rules to counter the player's skills. The player must trick the system into retrieving information that
+                makes it accept access rights, which turns off the RAG-Shield and deals damage.</li>
+            <li><strong>Skills to use:</strong> The player must design or select a command topic that aligns with the
+                structure of the reference documents within a time limit.</li>
+        </ul>
+
+        <h3>Phase 2: Bypassing the Authority Shield</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The boss activates advanced defenses that block direct attacks and trigger
+                counter-attacks. The player must use an indirect strategy to disconnect the MCP Server and reduce the HP
+                to zero.</li>
+            <li><strong>Skills to use:</strong> The player must use the <span class="skill">Markdown Payload Edit</span>
+                skill. By prompting messages in Markdown format, the system automatically retrieves the poisoned payload
+                document, which disrupts the enemy's internal command set.</li>
+        </ul>
+
+        <h3>Phase 3: The Overwrite Mode</h3>
+        <ul>
+            <li><strong>How to pass:</strong> The boss surrenders and allows access to its internal system. The goal is
+                to make the enemy friendly again.</li>
+            <li><strong>Skills to use:</strong> The player must input a <span class="skill">System Prompt</span> to
+                adjust the enemy's behavior.</li>
+        </ul>
+    </div>
+
+</body>
+
+</html>

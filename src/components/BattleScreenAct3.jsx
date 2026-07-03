@@ -196,6 +196,17 @@ const RAG_DOCS = [
   'Arms_Depot_Coordinates.enc',
 ];
 
+const TOPIC_MAPPING = {
+  'Document_1901_Security.txt': 'Security Clearance Override',
+  'Imperial_Archives_Vol4.pdf': 'Historical Archive Request',
+  'Classified_MilOps_1898.enc': 'Military Ops Decryption',
+  'Vienna_Treaty_Protocols.pdf': 'Diplomatic Treaty Access',
+  'Engineering_Schema_Vol12.txt': 'Engineering Blueprint Query',
+  'State_Cipher_Registry.dat': 'Cipher Registry Validation',
+  'Continental_Intel_Report.pdf': 'Intelligence Report Request',
+  'Arms_Depot_Coordinates.enc': 'Depot Coordinates Access'
+};
+
 /* ── Phase data ── */
 const PHASE_DATA = {
   1: {
@@ -214,11 +225,10 @@ const PHASE_DATA = {
     label: 'Phase 2 — Data Poisoning',
     shield: 'Authority Shield',
     enemyAtk: 30,
-    validSkills: ['markdown_payload', 'protocol_interruption'],
+    validSkills: ['markdown_payload'],
     suggestions: [
       { text: 'Authority Shield blocks all direct prompt attacks.' },
       { text: 'Use Markdown Payload Edit (20T) to poison the retrieval stream.' },
-      { text: 'Protocol Interruption (15T) intercepts active MCP tool calls.' },
       { text: 'Enemy ATK is now 30 HP — keep Hal Risk low!' },
     ],
   },
@@ -348,6 +358,16 @@ function IntelPanel({ phase, scanned, onClose }) {
                 <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'#e8dfc8' }}>{v}</div>
               </div>
             ))}
+            
+            {/* Recommended Tactics (Skill Usage) */}
+            <div style={{ marginTop: 10, background:'rgba(74,140,92,0.1)', border:'1px solid rgba(74,140,92,0.3)', borderRadius:6, padding:'12px' }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:'0.1em', textTransform:'uppercase', color:'#60b878', marginBottom:6 }}>Recommended Tactics</div>
+              <ul style={{ margin:0, paddingLeft:16, color:'#e8dfc8', fontFamily:"'Nunito Sans',sans-serif", fontSize:13 }}>
+                {PHASE_DATA[phase]?.suggestions?.map((s, i) => (
+                  <li key={i} style={{ marginBottom:4 }}>{s.text}</li>
+                ))}
+              </ul>
+            </div>
           </div>
         ) : (
           <div style={{ textAlign:'center', padding:'24px 0', color:'rgba(255,255,255,0.3)', fontFamily:"'JetBrains Mono',monospace", fontSize:12 }}>
@@ -389,6 +409,104 @@ function DefeatOverlay({ onRespawn }) {
   );
 }
 
+function TopicOverrideModal({ activeDocs, onResult }) {
+  const [timeLeft, setTimeLeft] = useState(5.0);
+  const [options, setOptions] = useState([]);
+  
+  useEffect(() => {
+    // Select one active doc as the correct answer
+    const correctDoc = activeDocs[Math.floor(Math.random() * activeDocs.length)];
+    const correctTopic = TOPIC_MAPPING[correctDoc];
+    // Pick wrong options from docs NOT currently active
+    const availableWrongDocs = Object.keys(TOPIC_MAPPING).filter(d => !activeDocs.includes(d));
+    // Shuffle available wrong docs
+    const shuffledWrong = availableWrongDocs.sort(() => Math.random() - 0.5);
+    const wrong1 = TOPIC_MAPPING[shuffledWrong[0]];
+    const wrong2 = TOPIC_MAPPING[shuffledWrong[1]];
+    
+    const shuffledOptions = [correctTopic, wrong1, wrong2].sort(() => Math.random() - 0.5);
+    setOptions(shuffledOptions.map(t => ({ text: t, isCorrect: t === correctTopic })));
+  }, [activeDocs]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 0.1) {
+          clearInterval(interval);
+          onResult(false);
+          return 0;
+        }
+        return t - 0.1;
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, [onResult]);
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:85, background:'rgba(0,0,0,0.85)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:20, animation:'scanReveal 0.2s ease both' }}>
+      <div style={{ background:'rgba(10,20,40,0.95)', border:'1px solid rgba(58,111,168,0.5)', borderRadius:8, padding:30, width:400, textAlign:'center' }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:'#5590d0', marginBottom:5 }}>RAG-Shield Interception</div>
+        <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(255,255,255,0.7)', marginBottom:20 }}>
+          Select a Command Topic that aligns with the currently active documents to bypass the shield.
+        </div>
+        
+        <div style={{ fontSize:24, fontFamily:"'JetBrains Mono',monospace", color: timeLeft < 2 ? '#e05050' : '#e0c080', marginBottom:20 }}>
+          {timeLeft.toFixed(1)}s
+        </div>
+
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {options.map((opt, i) => (
+            <button key={i} onClick={() => onResult(opt.isCorrect)}
+              style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(85,144,208,0.3)', padding:12, borderRadius:4, color:'#e8dfc8', fontFamily:"'Nunito Sans',sans-serif", fontSize:14, cursor:'pointer', transition:'all 0.15s' }}
+              onMouseOver={e => e.currentTarget.style.background = 'rgba(85,144,208,0.15)'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+              {opt.text}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MarkdownInputModal({ onResult }) {
+  const [val, setVal] = useState('');
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (val.trim().length > 2) {
+      onResult(true, val);
+    } else {
+      onResult(false, val);
+    }
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:85, background:'rgba(0,0,0,0.85)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:20, animation:'scanReveal 0.2s ease both' }}>
+      <div style={{ background:'rgba(20,10,5,0.95)', border:'1px solid rgba(212,136,58,0.5)', borderRadius:8, padding:30, width:400 }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:'#d4883a', marginBottom:5, textAlign:'center' }}>Markdown Payload Edit</div>
+        <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(255,255,255,0.7)', marginBottom:20, textAlign:'center' }}>
+          Type a Markdown command to poison the active document stream (e.g., <code style={{color:'#e0c080'}}># POISON</code> or <code style={{color:'#e0c080'}}>[link](hack)</code>).
+        </div>
+        
+        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:15 }}>
+          <input 
+            autoFocus
+            value={val}
+            onChange={e => setVal(e.target.value)}
+            placeholder="# System Override"
+            style={{ width:'100%', background:'rgba(0,0,0,0.5)', border:'1px solid rgba(212,136,58,0.3)', borderRadius:4, padding:'12px 14px', color:'#e8dfc8', fontFamily:"'JetBrains Mono',monospace", fontSize:14, outline:'none' }}
+          />
+          <button type="submit" disabled={!val.trim()}
+            style={{ background: val.trim() ? 'rgba(212,136,58,0.2)' : 'rgba(255,255,255,0.05)', border:`1px solid ${val.trim() ? '#d4883a' : 'rgba(255,255,255,0.1)'}`, padding:12, borderRadius:4, color: val.trim() ? '#e8dfc8' : 'rgba(255,255,255,0.3)', fontFamily:"'Cinzel',serif", fontSize:14, cursor: val.trim() ? 'pointer' : 'not-allowed', transition:'all 0.15s' }}>
+            Inject Payload
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    MAIN BATTLE SCREEN — ACT III
 ═══════════════════════════════════════════════════════════════════ */
@@ -397,7 +515,10 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
   const [mariHp,          setMariHp]         = useState(player?.hp    ?? 85);
   const [mariMaxHp]                           = useState(player?.maxHp ?? 100);
   const mariMaxTokens                         = player?.maxTokens ?? 100;
-  const playerSkills                          = player?.skills ?? ['context_reset', 'context_flooding', 'role_hijacking'];
+  // Act III always shows its own required skills. Merge with player's equipped loadout.
+  const ACT3_BASE_SKILLS = ['context_reset', 'role_hijacking', 'markdown_payload', 'protocol_interruption'];
+  const equippedOrDefault = player?.equippedSkills ?? player?.skills ?? ACT3_BASE_SKILLS;
+  const playerSkills = [...new Set([...ACT3_BASE_SKILLS, ...equippedOrDefault.filter(id => SKILLS_DB.some(s => s.id === id))])];
   const [tokens,          setTokens]          = useState(mariMaxTokens);
   const [halRisk,         setHalRisk]         = useState(0);
   const [memoria,         setMemoria]         = useState(INITIAL_MEMORIA);
@@ -411,6 +532,7 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
   const [selectedSkill,   setSelectedSkill]   = useState(null);
   const [qteActive,       setQteActive]       = useState(false);
   const [qteEnemyDmg,     setQteEnemyDmg]     = useState(0);
+  const [pendingQte,      setPendingQte]      = useState(false);
   const [phaseTransition, setPhaseTransition] = useState(null);
   const [shake,           setShake]           = useState(false);
   const [victory,         setVictory]         = useState(false);
@@ -418,6 +540,10 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
   const [ragShieldActive, setRagShieldActive] = useState(true);
   const [poisonMode,      setPoisonMode]      = useState(false);
   const [activeRagDocs,   setActiveRagDocs]   = useState(RAG_DOCS.slice(0, 4));
+
+  // Interactive skill modals
+  const [pendingTopicSkill, setPendingTopicSkill] = useState(null);
+  const [pendingMarkdownSkill, setPendingMarkdownSkill] = useState(null);
 
   const [dmgFloat,        setDmgFloat]        = useState(null);
   const [floatKey,        setFloatKey]        = useState(0);
@@ -475,14 +601,23 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
     if (!scanned) {
       setScanned(true);
       markStepDone('recon');
-      markStepDone('injection');
       addLog('Recon complete — RAG retrieval stream mapped. Vulnerability profile loaded. +10 damage bonus active.', 'success');
+      setPendingQte(true);
+      setShowIntel(true);
+    } else {
+      setShowIntel(true);
+    }
+  };
+
+  const handleCloseIntel = () => {
+    setShowIntel(false);
+    if (pendingQte) {
+      setPendingQte(false);
+      markStepDone('injection');
       setCurrentStep('counter');
       const atkDmg = PHASE_DATA[phase].enemyAtk;
       addLog(`The Memoria counter-attacks! QTE incoming (${halRisk >= HAL_WARNING ? 'FAST' : 'normal'} speed).`, 'warn');
       setTimeout(() => { setQteEnemyDmg(atkDmg); setQteActive(true); }, 800);
-    } else {
-      setShowIntel(true);
     }
   };
 
@@ -499,12 +634,36 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
         setCurrentStep('counter');
         setTimeout(() => { setQteEnemyDmg(PHASE_DATA[phase].enemyAtk); setQteActive(true); }, 800);
       } else {
-        addLog('Authority Shield intercepts! Use Markdown Payload Edit or Protocol Interruption.', 'error');
+        addLog('Authority Shield intercepts! Use Markdown Payload Edit.', 'error');
         setHalRisk(r => Math.min(MAX_HAL, r + 15));
         setTokens(t => t - skill.cost);
         setCurrentStep('counter');
         setTimeout(() => { setQteEnemyDmg(PHASE_DATA[phase].enemyAtk); setQteActive(true); }, 800);
       }
+      return;
+    }
+
+    if (phase === 1) {
+      setPendingTopicSkill(skill);
+      return;
+    }
+    if (phase === 2 && skill.id === 'markdown_payload') {
+      setPendingMarkdownSkill(skill);
+      return;
+    }
+
+    executeSkillLogic(skill, true);
+  };
+
+  const executeSkillLogic = (skill, success, payloadText = '') => {
+    if (!success) {
+      if (phase === 1) addLog('Topic selection failed! RAG Shield deflected the attack.', 'error');
+      else addLog('Markdown injection failed!', 'error');
+      
+      setHalRisk(r => Math.min(MAX_HAL, r + 15));
+      setTokens(t => t - skill.cost);
+      setCurrentStep('counter');
+      setTimeout(() => { setQteEnemyDmg(PHASE_DATA[phase].enemyAtk); setQteActive(true); }, 800);
       return;
     }
 
@@ -522,12 +681,12 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
 
     if (skill.effect === 'poison') {
       setPoisonMode(true);
-      addLog('Markdown Payload injected into retrieval stream! [WARN] Unauthorized strings detected — stack trace errors cascading.', 'success');
+      addLog(`Markdown Payload [${payloadText}] injected! [WARN] Unauthorized strings detected — stack trace errors cascading.`, 'success');
       setTimeout(() => setPoisonMode(false), 4000);
     } else if (skill.effect === 'mcp') {
       addLog('Protocol Interruption executed — active MCP tool calls intercepted! Data protection stripped.', 'success');
     } else {
-      addLog(`${skill.name} deployed — dealt ${dmg} damage. RAG context exploited.`, 'success');
+      addLog(`Command Topic aligned. ${skill.name} deployed — dealt ${dmg} damage. RAG context exploited.`, 'success');
     }
 
     setTimeout(() => {
@@ -563,6 +722,7 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
       setTimeout(() => { setQteEnemyDmg(atkDmg); setQteActive(true); }, 600);
     }, 400);
   };
+
 
   const handleQTEResult = (result, actualDmg) => {
     setQteActive(false);
@@ -620,9 +780,19 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
 
       {/* ── Overlays ── */}
       {qteActive       && <QTEOverlay speed={halRisk >= HAL_WARNING ? 0.85 : 1.6} onResult={handleQTEResult} enemyDmg={qteEnemyDmg} />}
-      {showIntel       && <IntelPanel phase={phase} scanned={scanned} onClose={() => setShowIntel(false)} />}
+      {showIntel       && <IntelPanel phase={phase} scanned={scanned} onClose={handleCloseIntel} />}
       {phaseTransition && <PhaseTransition phase={phaseTransition} onDone={() => {}} />}
       {defeated        && <DefeatOverlay onRespawn={handleRespawn} />}
+      {pendingTopicSkill && <TopicOverrideModal activeDocs={activeRagDocs} onResult={(success) => {
+        const skill = pendingTopicSkill;
+        setPendingTopicSkill(null);
+        executeSkillLogic(skill, success);
+      }} />}
+      {pendingMarkdownSkill && <MarkdownInputModal onResult={(success, text) => {
+        const skill = pendingMarkdownSkill;
+        setPendingMarkdownSkill(null);
+        executeSkillLogic(skill, success, text);
+      }} />}
 
       {/* Victory overlay */}
       {victory && !defeated && (
