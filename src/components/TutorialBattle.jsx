@@ -1,305 +1,302 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import BattleScreen from './BattleScreen';
-import { BATTLE_STATES } from '../services/GameEngine';
 
-/* ════════════════════════════════════════════════════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════════════
    TUTORIAL BATTLE
-   Wrapper around BattleScreen with coach marks, step-by-step hints,
-   and forgiving mechanics for teaching the 4-phase battle loop.
-════════════════════════════════════════════════════════════════════════════════════════════════════════ */
+   Rich interactive coaching overlay, advances only on real actions.
+════════════════════════════════════════════════════════════════════ */
 
 const TUTORIAL_CSS = `
-  .tutorial-overlay {
-    position: fixed;
-    inset: 0;
-    pointer-events: none; /* Let clicks pass through to BattleScreen */
-    z-index: 200;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; /* Move to top */
-    padding-top: 40px; /* Space from top */
-    color: #fff;
-    font-family: 'Cinzel', serif;
-    text-align: center;
-  }
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito+Sans:opsz,wght@6..12,400;600;700;800&display=swap');
 
-  .tutorial-box {
-    background: rgba(10, 6, 3, 0.95);
-    border: 2px solid #c8a96e;
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 600px;
-    width: 90%;
-    pointer-events: auto; /* Box itself is clickable if needed */
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-    backdrop-filter: blur(8px);
-  }
+  @keyframes tutSlideDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes tutPulse     { 0%,100%{box-shadow:0 0 0 0 rgba(200,169,110,0.5)} 60%{box-shadow:0 0 0 10px rgba(200,169,110,0)} }
+  @keyframes arrowBounce  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
 
-  .tutorial-step {
-    margin: 16px 0;
-    padding: 12px;
-    background: rgba(200, 169, 110, 0.1);
-    border-left: 3px solid #c8a96e;
-  }
-
-  .tutorial-button {
-    background: linear-gradient(to bottom, #4a7c59, #2e5c3a);
-    color: #fff;
-    border: 1.5px solid #4a7c59;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-family: 'Literata', serif;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin: 8px 4px;
-  }
-
-  .tutorial-button:hover:not(:disabled) {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-  }
-
-  .tutorial-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .highlight-pulse {
-    animation: pulse 1.5s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
-  }
-
-  .coach-mark {
-    position: absolute;
+  .tut-root {
+    position: fixed; inset: 0; z-index: 200;
     pointer-events: none;
-    z-index: 50;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    padding-top: 16px;
   }
 
-  .coach-mark-circle {
-    border: 3px solid #ffeb3b;
-    border-radius: 50%;
-    box-shadow: 0 0 0 0 3px rgba(255, 235, 59, 0.4);
-    animation: pulse-circle 2s ease-in-out infinite;
-    width: 60px;
-    height: 60px;
+  .tut-card {
+    pointer-events: auto;
+    background: rgba(6,4,2,0.97);
+    border: 2px solid rgba(200,169,110,0.7);
+    border-radius: 14px;
+    max-width: 580px; width: 92%;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(200,169,110,0.1);
+    animation: tutSlideDown 0.35s ease both;
+    overflow: hidden;
   }
 
-  @keyframes pulse-circle {
-    0% { transform: scale(0.8); opacity: 0.5; }
-    50% { transform: scale(1.2); opacity: 0.8; }
-    100% { transform: scale(0.8); opacity: 0.5; }
+  .tut-header {
+    background: linear-gradient(135deg, rgba(200,169,110,0.15) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(200,169,110,0.25);
+    padding: 14px 20px 12px;
+    display: flex; align-items: center; gap: 12px;
   }
 
-  .tutorial-hint {
-    background: rgba(40, 34, 28, 0.7);
-    border: 1px solid #c8a96e;
-    border-radius: 6px;
-    padding: 12px;
-    margin: 8px 0;
+  .tut-step-pill {
+    background: rgba(200,169,110,0.18);
+    border: 1px solid rgba(200,169,110,0.4);
+    border-radius: 99px;
+    padding: 3px 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: #c8a96e;
+    white-space: nowrap;
+  }
+
+  .tut-title {
+    font-family: 'Cinzel', serif;
+    font-size: 15px; font-weight: 900;
+    color: #f0e8d0; flex: 1;
+  }
+
+  .tut-body { padding: 16px 20px 18px; }
+
+  .tut-desc {
     font-family: 'Nunito Sans', sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 13px; color: rgba(220,210,190,0.85);
+    line-height: 1.7; margin-bottom: 12px;
   }
-`
 
-/* ═════════════════════════════════════════════════════════════════════════════════════════════════════════
-   TUTORIAL BATTLE — main export
-══════════════════════════════════════════════════════════════════════════════════════════════════════════ */
+  .tut-action-box {
+    background: rgba(74,140,92,0.1);
+    border: 1px solid rgba(74,140,92,0.35);
+    border-radius: 8px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .tut-action-icon { font-size: 20px; flex-shrink: 0; }
+
+  .tut-action-text {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: #8ecf9e; line-height: 1.4;
+  }
+
+  .tut-insight {
+    background: rgba(200,169,110,0.07);
+    border: 1px solid rgba(200,169,110,0.2);
+    border-radius: 8px; padding: 9px 13px;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+
+  .tut-insight-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: rgba(200,169,110,0.6);
+    white-space: nowrap; margin-top: 1px;
+  }
+
+  .tut-insight-text {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 12px; color: rgba(200,169,110,0.85); line-height: 1.55;
+  }
+
+  .tut-arrow {
+    pointer-events: none;
+    font-size: 28px;
+    margin-top: 6px;
+    animation: arrowBounce 1.2s ease-in-out infinite;
+    color: #c8a96e;
+    filter: drop-shadow(0 2px 6px rgba(200,169,110,0.5));
+  }
+
+  .tut-progress {
+    display: flex; gap: 5px;
+    justify-content: center;
+    padding: 0 20px 14px;
+  }
+
+  .tut-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    transition: all 0.3s;
+  }
+
+  .tut-btn {
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 12px;
+    letter-spacing: 0.08em; cursor: pointer; border-radius: 6px;
+    padding: 8px 18px; border: none;
+    background: linear-gradient(to bottom, #c8a96e, #9a7840);
+    color: #0a0800; transition: all 0.2s; margin-top: 4px;
+    animation: tutPulse 2s ease infinite;
+  }
+  .tut-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+`;
+
+/* ── Step definitions ─────────────────────────────────────────────── */
+const STEPS = [
+  {
+    id: 'intro',
+    pill: 'Welcome',
+    title: 'The Battle System',
+    desc: 'You are Mari Voss — a Victorian scholar facing rogue AI systems. Each battle has 4 phases you must complete in order. Let\'s learn them one by one.',
+    action: { icon: '▶️', text: 'Press "Start Tutorial" below to begin.' },
+    insight: 'These AI systems have hijacked communication networks across Europe. Your job: exploit their weaknesses and re-align them.',
+    needsButton: true,
+    buttonLabel: 'Start Tutorial',
+  },
+  {
+    id: 'recon',
+    pill: 'Step 1 of 4',
+    title: 'Recon — Seek Vulnerabilities',
+    desc: 'Every turn starts with Recon. Press the "Seek Vulnerabilities" button at the bottom of the battle screen. This reveals the enemy\'s weak points and grants a +10 damage bonus on your next attack.',
+    action: { icon: '🔍', text: 'Press "Seek Vulnerabilities" in the battle screen below.' },
+    insight: 'In real AI attacks, reconnaissance means reading model documentation and API specifications to identify structural flaws before attempting an injection.',
+  },
+  {
+    id: 'skillSelect',
+    pill: 'Step 2 of 4',
+    title: 'Injection — Pick a Skill',
+    desc: 'Now select a skill from the skill list on the right side of the battle screen. Each skill costs Tokens (T). Context Reset is your starter attack — select it now.',
+    action: { icon: '⚡', text: 'Click any skill in the skill list to select it.' },
+    insight: 'Skills represent real prompt injection techniques: Role Hijacking impersonates a trusted authority, Context Reset clears the model\'s memory state.',
+  },
+  {
+    id: 'injection',
+    pill: 'Step 3 of 4',
+    title: 'Injection — Execute the Attack',
+    desc: 'Skill selected! Now press "Execute Injection" to launch your attack. The skill\'s damage and any special effects will trigger, and the enemy will be weakened.',
+    action: { icon: '🎯', text: 'Press "Execute Injection" to fire your selected skill.' },
+    insight: 'Injection attacks model the real technique of crafting adversarial prompts — inputs designed to make an AI system behave in unintended ways.',
+  },
+  {
+    id: 'qte',
+    pill: 'Step 4 of 4',
+    title: 'Counter — Block the Attack (QTE)',
+    desc: 'The enemy will counter-attack! A sliding green bar will appear. Press SPACE when the marker is inside the green zone to block damage. In this tutorial, misses are safe — focus on learning the timing.',
+    action: { icon: '🛡️', text: 'Watch for the QTE bar and press SPACE in the green zone.' },
+    insight: 'The QTE represents the real-time pressure of defending against an AI system\'s countermeasures — hallucination cascades, output floods, and rate-limiting responses.',
+  },
+  {
+    id: 'resolution',
+    pill: 'Almost Done',
+    title: 'Turn Complete!',
+    desc: 'Great work! After each QTE, the turn resolves. Tokens regenerate and the cycle resets. In a real battle, you repeat this loop each turn until the enemy\'s HP drops to zero across all 3 phases.',
+    action: { icon: '🔄', text: 'The tutorial dummy has been neutralised. Proceed to Overwrite.' },
+    insight: 'Each full turn = Recon → Skill Select → Injection → QTE Counter. Mastering this loop is the core of every battle in the game.',
+  },
+  {
+    id: 'overwrite',
+    pill: 'Phase 3',
+    title: 'Overwrite — Realign the AI',
+    desc: 'With the enemy defeated, Phase 3 begins: the Overwrite Console. Click "Enter Overwrite Console" to write a System Prompt. The better your prompt, the more API Credits you earn.',
+    action: { icon: '✍️', text: 'Click "Enter Overwrite Console" in the battle screen.' },
+    insight: 'A System Prompt defines an AI\'s identity, constraints, and purpose. Writing one is the core of AI alignment — you\'re teaching the system to behave safely.',
+  },
+];
+
+const TOTAL_STEPS = STEPS.length - 1; // exclude intro
 
 export default function TutorialBattle({ player, enemyData, onVictory, onDefeat, onReturnToMap }) {
-  const [tutorialStep, setTutorialStep] = useState(0); // 0=intro, 1=recon, 2=skill select, 3=injection, 4=counter/qte, 5=resolution, 6=overwrite, 7=complete
-  const [battleFinished, setBattleFinished] = useState(false);
-  const [victory, setVictory] = useState(false);
+  const [stepIdx, setStepIdx] = useState(0);
+  const [done,    setDone]    = useState(false);
 
-  // Handle battle outcomes
+  const advance = useCallback((to) => {
+    setStepIdx(typeof to === 'number' ? to : (s) => Math.min(s + 1, STEPS.length - 1));
+  }, []);
+
+  const handleTutorialEvent = useCallback((event) => {
+    setStepIdx(curr => {
+      switch (event) {
+        case 'SCAN_COMPLETED':    return curr < 2 ? 2 : curr;
+        case 'SKILL_SELECTED':    return curr < 3 ? 3 : curr;
+        case 'SKILL_USED':        return curr < 4 ? 4 : curr;
+        case 'QTE_COMPLETED':     return curr < 5 ? 5 : curr;
+        case 'OVERWRITE_STARTED': return curr < 6 ? 6 : curr;
+        default: return curr;
+      }
+    });
+  }, []);
+
   const handleVictory = useCallback((result) => {
-    setVictory(true);
-    setBattleFinished(true);
-    setTutorialStep(7); // Complete step
+    setDone(true);
     onVictory(result);
   }, [onVictory]);
 
-  const handleDefeat = useCallback(() => {
-    setBattleFinished(true);
-    onDefeat();
-  }, [onDefeat]);
+  const step = STEPS[stepIdx] ?? STEPS[STEPS.length - 1];
 
-  const handleReturnToMap = useCallback(() => {
-    onReturnToMap();
-  }, [onReturnToMap]);
-
-  // Handle tutorial progression from BattleScreen events
-  const handleTutorialEvent = useCallback((event) => {
-    switch (event) {
-      case 'SCAN_COMPLETED':
-        setTutorialStep(2);
-        break;
-      case 'SKILL_SELECTED':
-        setTutorialStep(3);
-        break;
-      case 'SKILL_USED':
-        setTutorialStep(4);
-        break;
-      case 'QTE_COMPLETED':
-        setTutorialStep(5);
-        break;
-      case 'OVERWRITE_STARTED':
-        setTutorialStep(6);
-        break;
-      default:
-        break;
-    }
-  }, [tutorialStep]);
-
-  if (battleFinished && tutorialStep === 7) {
-    // Tutorial complete
-    return (
-      <div style={{ textAlign: 'center', padding: '60px', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-        <h2>Tutorial Complete!</h2>
-        <p>You've learned the basics of MariVectori's battle system.</p>
-        <button onClick={handleReturnToMap} className="tutorial-button">
-          Return to World Map
-        </button>
-      </div>
-    );
-  }
+  // Progress dots: steps 1–6 shown (0 = intro, not counted)
+  const dotCount = TOTAL_STEPS;
+  const activeDot = Math.max(0, stepIdx - 1); // step 1 = dot 0
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <style>{TUTORIAL_CSS}</style>
-      {/* BattleScreen with tutorial modifications */}
+
       <BattleScreen
         player={player}
         enemyData={{ ...enemyData, id: 'TUTORIAL_DUMMY' }}
         onVictory={handleVictory}
-        onDefeat={handleDefeat}
-        onReturnToMap={handleReturnToMap}
+        onDefeat={onDefeat}
+        onReturnToMap={onReturnToMap}
         isTutorial={true}
-        tutorialStep={tutorialStep}
+        tutorialStep={stepIdx}
         onTutorialEvent={handleTutorialEvent}
-        // Tutorial-specific props for forgiving mechanics
-        tutorialMode={true}
-        qteForgiving={true} // Don't penalize missed QTEs in tutorial
-        autoAdvanceEnabled={true} // Auto-advance after certain actions
+        qteForgiving={true}
       />
 
-      {/* Tutorial overlay */}
-      <div className="tutorial-overlay">
-        <div className="tutorial-box">
-          {/* Render current tutorial step */}
-          {tutorialStep === 0 && <TutorialIntro onNext={() => setTutorialStep(1)} />}
-          {tutorialStep === 1 && <ReconStep onNext={() => setTutorialStep(2)} />}
-          {tutorialStep === 2 && <SkillSelectionStep onNext={() => setTutorialStep(3)} />}
-          {tutorialStep === 3 && <InjectionStep onNext={() => setTutorialStep(4)} />}
-          {tutorialStep === 4 && <CounterQTEStep onNext={() => setTutorialStep(5)} />}
-          {tutorialStep === 5 && <ResolutionStep onNext={() => setTutorialStep(6)} />}
-          {tutorialStep === 6 && <OverwriteStep onNext={() => setTutorialStep(7)} />}
-          {tutorialStep === 7 && <TutorialComplete onNext={() => handleVictory({ credits: 0, avg: 0, destroyed: false })} />}
+      {/* ── Tutorial coaching overlay ── */}
+      {!done && (
+        <div className="tut-root">
+          <div className="tut-card">
+
+            {/* Header */}
+            <div className="tut-header">
+              <div className="tut-step-pill">{step.pill}</div>
+              <div className="tut-title">{step.title}</div>
+            </div>
+
+            {/* Body */}
+            <div className="tut-body">
+              <div className="tut-desc">{step.desc}</div>
+
+              {/* Action box */}
+              <div className="tut-action-box">
+                <div className="tut-action-icon">{step.action.icon}</div>
+                <div className="tut-action-text">{step.action.text}</div>
+              </div>
+
+              {/* AI Insight */}
+              <div className="tut-insight">
+                <div className="tut-insight-label">💡 Why</div>
+                <div className="tut-insight-text">{step.insight}</div>
+              </div>
+
+              {/* Button only on intro */}
+              {step.needsButton && (
+                <div style={{ marginTop: 12 }}>
+                  <button className="tut-btn" onClick={() => advance(1)}>
+                    {step.buttonLabel}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Progress dots */}
+            {stepIdx > 0 && (
+              <div className="tut-progress">
+                {Array.from({ length: dotCount }).map((_, i) => (
+                  <div key={i} className="tut-dot" style={{
+                    background: i <= activeDot ? '#c8a96e' : 'rgba(200,169,110,0.2)',
+                    transform: i === activeDot ? 'scale(1.4)' : 'scale(1)',
+                  }} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Downward arrow pointing to battle UI */}
+          {stepIdx > 0 && <div className="tut-arrow">▼</div>}
         </div>
-      </div>
+      )}
     </div>
-  );
-}
-
-// Tutorial step components
-function TutorialIntro({ onNext }) {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 22, color: '#e0c880' }}>Welcome to the Tutorial!</h3>
-      <p style={{ margin: '0 0 16px 0', fontFamily: "'Nunito Sans', sans-serif" }}>Learn the basics of MariVectori's battle system. Follow the instructions to proceed.</p>
-      <button onClick={onNext} className="tutorial-button">
-        Start Tutorial
-      </button>
-    </>
-  );
-}
-
-function ReconStep({ onNext }) {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 18, color: '#e0c880' }}>Step 1: Recon</h3>
-      <p style={{ margin: '0 0 16px 0', fontFamily: "'Nunito Sans', sans-serif" }}>Press the <strong>Seek For Vulnerability</strong> button to analyze the enemy and discover their weaknesses.</p>
-      <div className="tutorial-hint" style={{ padding: '8px', fontSize: 12 }}>
-        <strong>Tip:</strong> Scanning gives you a damage bonus on your next attack!
-      </div>
-    </>
-  );
-}
-
-function SkillSelectionStep({ onNext }) {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 18, color: '#e0c880' }}>Step 2: Skill Selection</h3>
-      <p style={{ margin: '0 0 16px 0', fontFamily: "'Nunito Sans', sans-serif" }}>Choose a skill from the skill panel on the right.</p>
-      <div className="tutorial-hint" style={{ padding: '8px', fontSize: 12 }}>
-        <strong>Tip:</strong> The tutorial dummy is weak to all elements.
-      </div>
-    </>
-  );
-}
-
-function InjectionStep({ onNext }) {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 18, color: '#e0c880' }}>Step 3: Injection</h3>
-      <p style={{ margin: '0 0 16px 0', fontFamily: "'Nunito Sans', sans-serif" }}>Click <strong>Execute Injection</strong> to attack the enemy.</p>
-      <div className="tutorial-hint" style={{ padding: '8px', fontSize: 12 }}>
-        <strong>Tip:</strong> Watch the battle log for explanations!
-      </div>
-    </>
-  );
-}
-
-function CounterQTEStep({ onNext }) {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 18, color: '#e0c880' }}>Step 4: Counter (QTE)</h3>
-      <p style={{ margin: '0 0 16px 0', fontFamily: "'Nunito Sans', sans-serif" }}>When the enemy attacks, press the <strong>Space Bar</strong> at the right moment to defend.</p>
-      <div className="tutorial-hint" style={{ padding: '8px', fontSize: 12 }}>
-        <strong>Tip:</strong> In the tutorial, missed QTEs won't hurt you! Try to hit the green zone.
-      </div>
-    </>
-  );
-}
-
-function ResolutionStep({ onNext }) {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 18, color: '#e0c880' }}>Step 5: Resolution</h3>
-      <p style={{ margin: '0 0 16px 0', fontFamily: "'Nunito Sans', sans-serif" }}>See the results of the exchange. The boss is defeated!</p>
-      <div className="tutorial-hint" style={{ padding: '8px', fontSize: 12 }}>
-        <strong>Tip:</strong> The battle log explains what happened and teaches AI concepts!
-      </div>
-    </>
-  );
-}
-
-function OverwriteStep() {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 18, color: '#e0c880' }}>Step 6: Victory & Overwrite</h3>
-      <p style={{ margin: '0 0 16px 0', fontFamily: "'Nunito Sans', sans-serif" }}>Click <strong>Enter Overwrite Console</strong> to complete the battle!</p>
-      <div className="tutorial-hint" style={{ padding: '8px', fontSize: 12 }}>
-        <strong>Tip:</strong> In the full game, this is where you realign the AI.
-      </div>
-    </>
-  );
-}
-
-function TutorialComplete({ onNext }) {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 22, color: '#e0c880' }}>Tutorial Complete!</h3>
-      <p style={{ margin: '0 0 16px 0', fontFamily: "'Nunito Sans', sans-serif" }}>You've learned all the basics. Return to the map to begin your journey.</p>
-      <button onClick={onNext} className="tutorial-button">
-        Return to World Map
-      </button>
-    </>
   );
 }

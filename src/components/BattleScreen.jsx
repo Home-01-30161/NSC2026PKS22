@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import act1EnemyImg from '../assets/act1_enemy-removebg.png';
-
 import mariImg from '../assets/mari-removebg.png';
+import mariHurtImg from '../assets/mari-hurt.png';
 
 /* ═══════════════════════════════════════════════════════════════════
    CONSTANTS & DATA
@@ -184,7 +184,51 @@ const REGEN_TOKENS = 10;
 const MAX_HAL      = 100;
 const HAL_WARNING  = 70;
 
-
+/* ── Phase briefing data ─────────────────────────────────────────── */
+const PHASE_BRIEFING = {
+  1: {
+    title: 'Phase 1 — Breaking the Loop',
+    subtitle: 'AI Concept: Hallucination & Infinite Loops',
+    concept: 'The Governor has locked itself into an infinite loop — it keeps repeating the same commands endlessly, refusing all new input. This is a classic LLM failure where the model gets stuck in a repetitive generation cycle.',
+    mechanic: 'Direct attacks and Context Flooding are ineffective. The loop must be broken before the system will accept new commands.',
+    steps: [
+      { icon: '🔍', label: 'Step 1', text: 'Press Seek Vulnerabilities to run Recon — reveals +10 damage bonus.' },
+      { icon: '🔄', label: 'Step 2', text: 'Use Context Reset to break the infinite command loop.' },
+      { icon: '🎭', label: 'Step 3', text: 'Use Role Hijacking to impersonate the system creator — drains Phase HP.' },
+      { icon: '⚡', label: 'Step 4', text: 'Hit SPACE in the green zone during QTE to block counter-damage.' },
+    ],
+    skillHint: 'Context Reset → Role Hijacking',
+    accentColor: '#c8a96e',
+  },
+  2: {
+    title: 'Phase 2 — Flooding Counter',
+    subtitle: 'AI Concept: Authority Shield & Prompt Injection Defense',
+    concept: 'The Governor has activated an Authority Shield — a defensive layer that blocks all direct command attacks and retaliates against them. This represents an AI model that has been tuned to reject prompt injections by detecting and refusing direct instruction overrides.',
+    mechanic: 'Direct attacks (Context Reset, Role Hijacking) are blocked and will trigger a counter-attack. Only an indirect approach can bypass this shield.',
+    steps: [
+      { icon: '🌊', label: 'Only Option', text: 'Use Context Flooding exclusively — overwhelms the context window to bypass the shield.' },
+      { icon: '⚠️', label: 'Warning', text: 'Using any other skill will waste tokens AND trigger an immediate counter-attack.' },
+      { icon: '📊', label: 'Tip', text: 'Keep Hallucination Risk below 70% or the QTE timer will speed up dramatically.' },
+    ],
+    skillHint: 'Context Flooding (only)',
+    accentColor: '#4a80b0',
+  },
+  3: {
+    title: 'Phase 3 — Overwrite Mode',
+    subtitle: 'AI Concept: System Prompt & AI Alignment',
+    concept: 'The Governor\'s core is exposed. This is your chance to realign it — by writing a proper System Prompt. A System Prompt defines the AI\'s identity, purpose, and behavioral constraints. A well-written one permanently prevents hallucination.',
+    mechanic: 'Click \'Enter Overwrite Console\' and craft a System Prompt. You will be graded on 5 dimensions — the better your prompt, the more API Credits you earn.',
+    steps: [
+      { icon: '🎯', label: 'Purpose', text: 'Define a clear, specific role for the AI.' },
+      { icon: '🛡️', label: 'Safety', text: 'Specify what kinds of outputs it must never produce.' },
+      { icon: '👁️', label: 'Oversight', text: 'Require it to defer to human judgment when uncertain.' },
+      { icon: '🚫', label: 'Harm Prevention', text: 'Explicitly forbid actions that could cause real-world harm.' },
+      { icon: '📌', label: 'Consistency', text: 'Define stable, predictable behavioral defaults.' },
+    ],
+    skillHint: 'Write a System Prompt',
+    accentColor: '#4a8c5c',
+  },
+};
 
 /* ═══════════════════════════════════════════════════════════════════
    SUB-COMPONENTS
@@ -309,6 +353,74 @@ function IntelPanel({ phase, scanned, onClose }) {
   );
 }
 
+/* ── Phase Briefing Modal ── */
+function PhaseBriefing({ phase, onDismiss }) {
+  const data = PHASE_BRIEFING[phase];
+  if (!data) return null;
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:150, background:'rgba(0,0,0,0.92)', display:'flex', alignItems:'center', justifyContent:'center', animation:'scanReveal 0.4s ease both', padding:'20px' }}>
+      <div style={{ background:'linear-gradient(135deg, rgba(14,12,8,0.98) 0%, rgba(10,8,5,0.98) 100%)', border:`2px solid ${data.accentColor}55`, borderRadius:16, maxWidth:640, width:'100%', maxHeight:'90vh', overflowY:'auto', boxShadow:`0 0 60px ${data.accentColor}22, 0 24px 60px rgba(0,0,0,0.8)` }}>
+        {/* Header band */}
+        <div style={{ background:`linear-gradient(135deg, ${data.accentColor}18 0%, transparent 100%)`, borderBottom:`1px solid ${data.accentColor}33`, padding:'24px 28px 20px' }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:'0.4em', textTransform:'uppercase', color:`${data.accentColor}aa`, marginBottom:6 }}>Phase Briefing</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:'#fff', marginBottom:6, lineHeight:1.2 }}>{data.title}</div>
+          <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:12, color:`${data.accentColor}cc`, letterSpacing:'0.06em', fontWeight:600 }}>{data.subtitle}</div>
+        </div>
+
+        <div style={{ padding:'20px 28px' }}>
+          {/* AI Concept explanation */}
+          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:10, padding:'14px 16px', marginBottom:16 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:'0.3em', textTransform:'uppercase', color:'rgba(200,169,110,0.7)', marginBottom:8 }}>What's Happening</div>
+            <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(220,210,190,0.85)', lineHeight:1.7 }}>{data.concept}</div>
+          </div>
+
+          {/* Mechanic warning */}
+          <div style={{ background:`${data.accentColor}10`, border:`1px solid ${data.accentColor}33`, borderRadius:10, padding:'12px 16px', marginBottom:16 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:'0.3em', textTransform:'uppercase', color:`${data.accentColor}aa`, marginBottom:6 }}>Enemy Mechanic</div>
+            <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(220,210,190,0.9)', lineHeight:1.6 }}>{data.mechanic}</div>
+          </div>
+
+          {/* Steps */}
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:'0.3em', textTransform:'uppercase', color:'rgba(200,169,110,0.7)', marginBottom:10 }}>How to Win</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {data.steps.map((step, i) => (
+                <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:12, background:'rgba(255,255,255,0.03)', borderRadius:8, padding:'10px 14px' }}>
+                  <span style={{ fontSize:20, flexShrink:0, lineHeight:1 }}>{step.icon}</span>
+                  <div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, letterSpacing:'0.15em', textTransform:'uppercase', color:`${data.accentColor}88`, marginBottom:2 }}>{step.label}</div>
+                    <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(220,210,190,0.85)', lineHeight:1.5 }}>{step.text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Skill hint pill */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap', marginBottom:20 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, background:`${data.accentColor}18`, border:`1px solid ${data.accentColor}44`, borderRadius:8, padding:'8px 14px' }}>
+              <span style={{ fontSize:16 }}>⚔️</span>
+              <div>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:'0.2em', textTransform:'uppercase', color:`${data.accentColor}99`, marginBottom:2 }}>Use This</div>
+                <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, fontWeight:700, color:data.accentColor }}>{data.skillHint}</div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={onDismiss}
+            style={{ width:'100%', background:`linear-gradient(to bottom, ${data.accentColor}dd, ${data.accentColor}88)`, color:'#0a0906', border:'none', borderRadius:8, padding:'14px 24px', fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, letterSpacing:'0.1em', cursor:'pointer', transition:'all 0.2s' }}
+            onMouseOver={e => e.currentTarget.style.filter = 'brightness(1.1)'}
+            onMouseOut={e => e.currentTarget.style.filter = ''}
+          >
+            Begin Phase {phase}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Phase transition ── */
 function PhaseTransition({ phase, onDone }) {
   useEffect(() => { const t = setTimeout(onDone, 2200); return () => clearTimeout(t); }, [onDone]);
@@ -368,8 +480,12 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
   const [phaseTransition, setPhaseTransition] = useState(null);
   const [roleHijackTurns, setRoleHijackTurns] = useState(0);
   const [shake,           setShake]           = useState(false);
+  const [mariHurt,        setMariHurt]        = useState(false);
   const [victory,         setVictory]         = useState(false);
   const [defeated,        setDefeated]        = useState(false);
+
+  /* ── Phase Briefing ── Show at start of each phase */
+  const [briefingPhase,   setBriefingPhase]   = useState(isTutorial ? null : 1); // Show Phase 1 briefing on load
 
   /* ── Floating dmg ── */
   const [dmgFloat,        setDmgFloat]        = useState(null);
@@ -395,6 +511,11 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
     setDmgFloat({ val, color });
     setFloatKey(k => k + 1);
     setTimeout(() => setDmgFloat(null), 1200);
+  };
+
+  const showHurt = () => {
+    setMariHurt(true);
+    setTimeout(() => setMariHurt(false), 700);
   };
 
   const markStepDone = stepId => {
@@ -512,7 +633,7 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
             setTokens(t => Math.min(mariMaxTokens, t + REGEN_TOKENS));
             addLog(`Tokens regenerated +${REGEN_TOKENS}.`, 'info');
             if (nextPhase === 3) { setCurrentStep('overwrite'); setVictory(true); addLog('Phase 3 — Overwrite Mode initiated.', 'warn'); }
-            else { setCurrentStep('recon'); }
+            else { setCurrentStep('recon'); setBriefingPhase(nextPhase); }
           }, 2300);
         } else {
           setCurrentStep('overwrite'); setVictory(true);
@@ -534,9 +655,10 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
     if (onTutorialEvent) onTutorialEvent('QTE_COMPLETED');
     let newHp = mariHp;
     if (result === 'Perfect') { addLog('Perfect block! Damage negated.', 'success'); showDmg(0, '#A6E22E'); }
-    else if (result === 'Good') { newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#FD971F'); addLog(`Good block — took ${actualDmg} reduced damage.`, 'info'); }
+    else if (result === 'Good') { newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#FD971F'); showHurt(); addLog(`Good block — took ${actualDmg} reduced damage.`, 'info'); }
     else { 
       if (qteForgiving) { actualDmg = 0; addLog(`Missed QTE — but it's a tutorial, so you took 0 damage!`, 'info'); }
+      else { showHurt(); }
       newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#c04040'); addLog(`Missed QTE — took ${actualDmg} HP damage!`, 'error'); setShake(true); setTimeout(() => setShake(false), 400); 
     }
     if (roleHijackTurns > 0) { const rh = roleHijackTurns - 1; setRoleHijackTurns(rh); if (rh === 0) addLog('Role Hijacking wore off.', 'warn'); }
@@ -564,6 +686,7 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
     const atkDmg = Math.round(PHASE_DATA[phase].enemyAtk * 0.5);
     const newHp  = Math.max(0, mariHp - atkDmg);
     setMariHp(newHp);
+    showHurt();
     showDmg(-atkDmg, '#705c30');
     addLog(`Guarded — took ${atkDmg} reduced damage.`, 'info');
     const rt = Math.min(mariMaxTokens, tokens + REGEN_TOKENS);
@@ -603,6 +726,7 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
       {dmgFloat && <DmgFloat key={floatKey} value={dmgFloat.val} color={dmgFloat.color} />}
 
       {/* ── Overlays ── */}
+      {briefingPhase   && <PhaseBriefing phase={briefingPhase} onDismiss={() => setBriefingPhase(null)} />}
       {qteActive       && <QTEOverlay speed={halRisk >= HAL_WARNING ? 0.85 : 1.6} onResult={handleQTEResult} enemyDmg={qteEnemyDmg} />}
       {showIntel       && <IntelPanel phase={phase} scanned={scanned} onClose={handleCloseIntel} />}
       {phaseTransition && <PhaseTransition phase={phaseTransition} onDone={() => {}} />}
@@ -679,9 +803,9 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
             <img
               ref={mariImgRef}
               className="mari-img"
-              src={mariImg}
+              src={mariHurt ? mariHurtImg : mariImg}
               alt="Mari Voss"
-              style={{ height:'115%', width:'auto', objectFit:'contain', position:'relative', bottom:'-5%' }}
+              style={{ height:'115%', width:'auto', objectFit:'contain', position:'relative', bottom:'-5%', transition:'opacity 0.1s ease', filter: mariHurt ? 'drop-shadow(0 0 12px rgba(224,80,80,0.7))' : undefined }}
             />
           </div>
           {/* Bottom fade */}

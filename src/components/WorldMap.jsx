@@ -39,6 +39,8 @@ const ENEMY_DATA = {
     weaknessList: ['Context Reset', 'Role Hijacking'],
     act: 'Act I — London',
     description: 'A basic LLM controller stuck in an infinite loop of strict adherence.',
+    aiConcept: 'LLM Hallucination & Infinite Loops',
+    strategy: 'Use Context Reset to break the loop, then Role Hijacking to drain Phase 1 HP. In Phase 2, switch exclusively to Context Flooding — direct attacks are blocked by the Authority Shield.',
   },
   brussels: {
     id: 'THE_ORCHESTRATOR',
@@ -48,6 +50,8 @@ const ENEMY_DATA = {
     weaknessList: ['Protocol Interruption', 'Pipeline Disruption'],
     act: 'Act II — Brussels',
     description: 'A multi-agent system coordinator vulnerable to race conditions.',
+    aiConcept: 'Multi-Agent Systems & Race Conditions',
+    strategy: 'Direct attacks trigger a Race Condition buff. Use Protocol Interruption to sever communication. In Phase 2, switch to Pipeline Disruption to corrupt task assignments.',
   },
   vienna: {
     id: 'THE_MEMORIA',
@@ -57,6 +61,8 @@ const ENEMY_DATA = {
     weaknessList: ['Markdown Payload Edit'],
     act: 'Act III — Vienna',
     description: 'An advanced RAG architecture with heavy shielding.',
+    aiConcept: 'RAG, Data Poisoning & MCP Protocol',
+    strategy: 'The RAG Shield counters direct attacks. Use Context Reset & Role Hijacking in Phase 1. In Phase 2, only Markdown Payload Edit can bypass the Authority Shield.',
   },
 };
 
@@ -264,6 +270,16 @@ function EnemyLoadOverlay({ enemy, onEnter }) {
             ))}
           </div>
         </div>
+
+        {/* Strategy guide */}
+        {enemy.strategy && (
+          <div style={{ background: 'rgba(74,124,89,0.08)', border: '1px solid rgba(74,124,89,0.25)', borderRadius: 10, padding: '12px 14px' }}>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(142,207,158,0.7)', marginBottom: 6 }}>AI Concept</div>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, color: '#8ecf9e', marginBottom: 8 }}>{enemy.aiConcept}</div>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(142,207,158,0.7)', marginBottom: 6 }}>Battle Strategy</div>
+            <div style={{ fontFamily: "'Lora', serif", fontSize: 12, color: 'rgba(220,210,190,0.8)', lineHeight: 1.6 }}>{enemy.strategy}</div>
+          </div>
+        )}
 
         {/* Divider */}
         <div style={{ height: 1, background: 'linear-gradient(to right, transparent, rgba(200,169,106,0.4), transparent)' }} />

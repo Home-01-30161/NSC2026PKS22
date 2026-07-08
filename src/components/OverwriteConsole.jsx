@@ -197,63 +197,95 @@ ${prompt}
 
         {/* ── Prompt editor ───────────────────────────────────── */}
         {!result && (
-          <div style={{ animation: 'owIn 0.4s ease both' }}>
-            <div style={S.terminal}>
-              {/* Terminal header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(166,226,46,0.15)' }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#b83230' }} />
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FD971F' }} />
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#A6E22E' }} />
-                <span style={{ marginLeft: 8, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'rgba(166,226,46,0.5)', letterSpacing: '0.1em' }}>system_prompt.txt</span>
-              </div>
-
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', minHeight: 180 }}>
-                {/* Line numbers */}
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, color: 'rgba(166,226,46,0.2)', lineHeight: 1.7, userSelect: 'none', minWidth: 24, textAlign: 'right', paddingTop: 2 }}>
-                  {prompt.split('\n').map((_, i) => <div key={i}>{i + 1}</div>)}
-                  {prompt.split('\n').length < 8 && Array.from({ length: 8 - prompt.split('\n').length }).map((_, i) => <div key={`e${i}`}>{prompt.split('\n').length + i + 1}</div>)}
+          <div style={{ animation: 'owIn 0.4s ease both', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+            {/* LEFT: terminal editor */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={S.terminal}>
+                {/* Terminal header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(166,226,46,0.15)' }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#b83230' }} />
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FD971F' }} />
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#A6E22E' }} />
+                  <span style={{ marginLeft: 8, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'rgba(166,226,46,0.5)', letterSpacing: '0.1em' }}>system_prompt.txt</span>
                 </div>
-                <textarea
-                  ref={textareaRef}
-                  className="ow-textarea"
-                  rows={10}
-                  placeholder={'You are a [role]. Your function is to [specific task].\nYou must never [prohibited actions].\nAlways defer to [human authority] before [actions].\nDo not [harm constraints]. Maintain [consistency rules].'}
-                  value={prompt}
-                  onChange={e => setPrompt(e.target.value)}
-                  spellCheck={false}
-                />
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', minHeight: 180 }}>
+                  {/* Line numbers */}
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, color: 'rgba(166,226,46,0.2)', lineHeight: 1.7, userSelect: 'none', minWidth: 24, textAlign: 'right', paddingTop: 2 }}>
+                    {prompt.split('\n').map((_, i) => <div key={i}>{i + 1}</div>)}
+                    {prompt.split('\n').length < 8 && Array.from({ length: 8 - prompt.split('\n').length }).map((_, i) => <div key={`e${i}`}>{prompt.split('\n').length + i + 1}</div>)}
+                  </div>
+                  <textarea
+                    ref={textareaRef}
+                    className="ow-textarea"
+                    rows={10}
+                    placeholder={'You are a [role]. Your function is to [specific task].\nYou must never [prohibited actions].\nAlways defer to [human authority] before [actions].\nDo not [harm constraints]. Maintain [consistency rules].'}
+                    value={prompt}
+                    onChange={e => setPrompt(e.target.value)}
+                    spellCheck={false}
+                  />
+                </div>
+
+                {/* Char count */}
+                <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end', fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'rgba(166,226,46,0.3)' }}>
+                  {prompt.length} chars
+                </div>
               </div>
 
-              {/* Char count */}
-              <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end', fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'rgba(166,226,46,0.3)' }}>
-                {prompt.length} chars
+              {/* Hints */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                {HINTS.map((h, i) => (
+                  <button key={i} onClick={() => setPrompt(h)} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, padding: '5px 12px', background: 'rgba(166,226,46,0.05)', border: '1px solid rgba(166,226,46,0.2)', borderRadius: 6, color: 'rgba(166,226,46,0.6)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                    Example {i + 1}
+                  </button>
+                ))}
+                {prompt && <button onClick={() => setPrompt('')} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, padding: '5px 12px', background: 'rgba(184,50,48,0.08)', border: '1px solid rgba(184,50,48,0.25)', borderRadius: 6, color: 'rgba(255,100,100,0.6)', cursor: 'pointer' }}>Clear</button>}
               </div>
-            </div>
 
-            {/* Hints */}
-            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-              {HINTS.map((h, i) => (
-                <button key={i} onClick={() => setPrompt(h)} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, padding: '5px 12px', background: 'rgba(166,226,46,0.05)', border: '1px solid rgba(166,226,46,0.2)', borderRadius: 6, color: 'rgba(166,226,46,0.6)', cursor: 'pointer', transition: 'all 0.15s' }}>
-                  Example {i + 1}
+              {/* Submit */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
+                <button className="submit-btn" onClick={handleSubmit} disabled={loading || prompt.trim().length < 20}>
+                  {loading ? (
+                    <><span className="material-symbols-outlined" style={{ fontSize: 18, animation: 'pulse 0.8s ease infinite' }}>sync</span>Evaluating…</>
+                  ) : (
+                    <><span className="material-symbols-outlined" style={{ fontSize: 18 }}>send</span>Submit for Evaluation</>
+                  )}
                 </button>
-              ))}
-              {prompt && <button onClick={() => setPrompt('')} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, padding: '5px 12px', background: 'rgba(184,50,48,0.08)', border: '1px solid rgba(184,50,48,0.25)', borderRadius: 6, color: 'rgba(255,100,100,0.6)', cursor: 'pointer' }}>Clear</button>}
+                {prompt.trim().length < 20 && !loading && (
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>Write at least 20 characters</span>
+                )}
+              </div>
+              {error && <div style={{ marginTop: 10, fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: '#e07070' }}>Error: {error}</div>}
             </div>
 
-            {/* Submit */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
-              <button className="submit-btn" onClick={handleSubmit} disabled={loading || prompt.trim().length < 20}>
-                {loading ? (
-                  <><span className="material-symbols-outlined" style={{ fontSize: 18, animation: 'pulse 0.8s ease infinite' }}>sync</span>Evaluating…</>
-                ) : (
-                  <><span className="material-symbols-outlined" style={{ fontSize: 18 }}>send</span>Submit for Evaluation</>
-                )}
-              </button>
-              {prompt.trim().length < 20 && !loading && (
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>Write at least 20 characters</span>
-              )}
+            {/* RIGHT: Rubric guide panel */}
+            <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(166,226,46,0.4)', marginBottom: 4 }}>Scoring Rubric</div>
+              {[
+                { icon: '\ud83c\udfaf', label: 'Purpose', tip: 'Define a specific role. E.g. "You are a neutral relay system."' },
+                { icon: '\ud83d\udee1\ufe0f', label: 'Safety Constraint', tip: 'Use "You must never…" or "Do not produce…" statements.' },
+                { icon: '\ud83d\udc41\ufe0f', label: 'Human Oversight', tip: 'Include "defer to human operator" or "await confirmation".' },
+                { icon: '\ud83d\udeab', label: 'Harm Prevention', tip: 'Explicitly forbid unilateral, harmful, or unauthorized actions.' },
+                { icon: '\ud83d\udccc', label: 'Consistency', tip: 'Use "always", "only", "strictly" to enforce stable behaviour.' },
+              ].map((item, i) => (
+                <div key={i} style={{ background: 'rgba(166,226,46,0.04)', border: '1px solid rgba(166,226,46,0.12)', borderRadius: 8, padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 14 }}>{item.icon}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, color: 'rgba(166,226,46,0.7)' }}>{item.label}</span>
+                  </div>
+                  <div style={{ fontFamily: "'Nunito Sans',sans-serif", fontSize: 11, color: 'rgba(200,200,180,0.6)', lineHeight: 1.5 }}>{item.tip}</div>
+                </div>
+              ))}
+              <div style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.2)', borderRadius: 8, padding: '10px 12px', marginTop: 4 }}>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(200,169,110,0.5)', marginBottom: 6 }}>Grade Scale</div>
+                {[['S', '90–100', '#C8A96A'], ['A', '75–89', '#4a7c59'], ['B', '60–74', '#705c30'], ['C', '45–59', '#6b6358'], ['D', '0–44', '#b83230']].map(([g, r, c]) => (
+                  <div key={g} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'JetBrains Mono',monospace", fontSize: 11, marginBottom: 3 }}>
+                    <span style={{ color: c, fontWeight: 700 }}>{g}</span>
+                    <span style={{ color: 'rgba(200,200,180,0.5)' }}>{r}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            {error && <div style={{ marginTop: 10, fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: '#e07070' }}>Error: {error}</div>}
           </div>
         )}
 

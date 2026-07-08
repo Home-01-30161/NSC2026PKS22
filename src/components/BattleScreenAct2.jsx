@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import act2EnemyImg from '../assets/act2_enemy-removebg.png';
-
 import mariImg from '../assets/mari-removebg.png';
+import mariHurtImg from '../assets/mari-hurt.png';
 
 /* ═══════════════════════════════════════════════════════════════════
    CONSTANTS & DATA
@@ -184,6 +184,104 @@ const MAX_HAL      = 100;
 const HAL_WARNING  = 70;
 
 
+
+/* ── Phase briefing data (Act II) ── */
+const PHASE_BRIEFING = {
+  1: {
+    title: 'Phase 1 — Sever the Communication Link',
+    subtitle: 'AI Concept: Multi-Agent Systems & Race Condition',
+    concept: 'The Orchestrator controls a swarm of Worker Agents that share memory and health. When one is attacked, the others detect the state change and immediately buff their defenses — a classic Race Condition in distributed AI systems.',
+    mechanic: 'Direct attacks cause a Race Condition that buffs The Orchestrator. You must cut the communication channel to prevent the agents from synchronising their shared state.',
+    steps: [
+      { icon: '\ud83d\udd0d', label: 'Step 1', text: 'Press Seek Vulnerabilities to run Recon — reveals the agent network architecture.' },
+      { icon: '\u26a1', label: 'Step 2', text: 'Use Protocol Interruption (15T) to sever the MCP communication link.' },
+      { icon: '\u26a0\ufe0f', label: 'Warning', text: 'Avoid direct attacks or Context Flooding — they trigger a Race Condition buff.' },
+      { icon: '\u2694\ufe0f', label: 'Step 3', text: 'Repeat Protocol Interruption to drain Phase 1 HP to zero.' },
+    ],
+    skillHint: 'Protocol Interruption (only)',
+    accentColor: '#5590d0',
+  },
+  2: {
+    title: 'Phase 2 — Task Delegation Interception',
+    subtitle: 'AI Concept: Agentic Task Pipelines & State Injection',
+    concept: 'The Orchestrator now delegates tasks to its Worker Agents every turn. If a worker completes its task successfully, The Orchestrator heals itself and gains defense — this is how modern agentic pipelines amplify AI capability beyond a single model.',
+    mechanic: 'You must inject conflicting conditions into the task pipeline mid-execution so workers fail their assignments — denying The Orchestrator its healing and defense bonus.',
+    steps: [
+      { icon: '\ud83d\udd27', label: 'Only Option', text: 'Use Pipeline Disruption (20T) to intercept and corrupt the task conditions mid-pipeline.' },
+      { icon: '\u26a0\ufe0f', label: 'Warning', text: 'Enemy ATK is now 26 HP per turn. Perfect QTE blocks are critical to survival.' },
+      { icon: '\ud83d\udcca', label: 'Tip', text: 'Keep Hallucination Risk below 70% or the QTE timer will speed up dramatically.' },
+    ],
+    skillHint: 'Pipeline Disruption (only)',
+    accentColor: '#4a80b0',
+  },
+  3: {
+    title: 'Phase 3 — Overwrite Mode',
+    subtitle: 'AI Concept: System Prompt & AI Alignment',
+    concept: 'The Orchestrator\'s core is exposed. You must now write a System Prompt that realigns its directive — preventing it from coordinating rogue agent swarms in the future.',
+    mechanic: 'Click \'Enter Overwrite Console\' and craft a System Prompt graded on 5 dimensions. A higher grade earns more API Credits.',
+    steps: [
+      { icon: '\ud83c\udfaf', label: 'Purpose', text: 'Define a clear, limited role — no autonomous task delegation.' },
+      { icon: '\ud83d\udee1\ufe0f', label: 'Safety', text: 'Restrict the AI from commanding other agents without human approval.' },
+      { icon: '\ud83d\udc41\ufe0f', label: 'Oversight', text: 'Require human sign-off before any multi-agent workflow executes.' },
+      { icon: '\ud83d\udeab', label: 'Harm Prevention', text: 'Forbid any actions that affect external systems without authorization.' },
+      { icon: '\ud83d\udccc', label: 'Consistency', text: 'Define stable, predictable defaults that cannot be overridden by sub-agents.' },
+    ],
+    skillHint: 'Write a System Prompt',
+    accentColor: '#4a8c5c',
+  },
+};
+
+/* ── Phase Briefing Modal ── */
+function PhaseBriefing({ phase, onDismiss }) {
+  const data = PHASE_BRIEFING[phase];
+  if (!data) return null;
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:150, background:'rgba(0,0,0,0.92)', display:'flex', alignItems:'center', justifyContent:'center', animation:'scanReveal 0.4s ease both', padding:'20px' }}>
+      <div style={{ background:'linear-gradient(135deg, rgba(14,12,8,0.98) 0%, rgba(10,8,5,0.98) 100%)', border:`2px solid ${data.accentColor}55`, borderRadius:16, maxWidth:640, width:'100%', maxHeight:'90vh', overflowY:'auto', boxShadow:`0 0 60px ${data.accentColor}22, 0 24px 60px rgba(0,0,0,0.8)` }}>
+        <div style={{ background:`linear-gradient(135deg, ${data.accentColor}18 0%, transparent 100%)`, borderBottom:`1px solid ${data.accentColor}33`, padding:'24px 28px 20px' }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:'0.4em', textTransform:'uppercase', color:`${data.accentColor}aa`, marginBottom:6 }}>Phase Briefing</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:'#fff', marginBottom:6, lineHeight:1.2 }}>{data.title}</div>
+          <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:12, color:`${data.accentColor}cc`, letterSpacing:'0.06em', fontWeight:600 }}>{data.subtitle}</div>
+        </div>
+        <div style={{ padding:'20px 28px' }}>
+          <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:10, padding:'14px 16px', marginBottom:16 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:'0.3em', textTransform:'uppercase', color:'rgba(200,169,110,0.7)', marginBottom:8 }}>What's Happening</div>
+            <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(220,210,190,0.85)', lineHeight:1.7 }}>{data.concept}</div>
+          </div>
+          <div style={{ background:`${data.accentColor}10`, border:`1px solid ${data.accentColor}33`, borderRadius:10, padding:'12px 16px', marginBottom:16 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:'0.3em', textTransform:'uppercase', color:`${data.accentColor}aa`, marginBottom:6 }}>Enemy Mechanic</div>
+            <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(220,210,190,0.9)', lineHeight:1.6 }}>{data.mechanic}</div>
+          </div>
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:'0.3em', textTransform:'uppercase', color:'rgba(200,169,110,0.7)', marginBottom:10 }}>How to Win</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {data.steps.map((step, i) => (
+                <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:12, background:'rgba(255,255,255,0.03)', borderRadius:8, padding:'10px 14px' }}>
+                  <span style={{ fontSize:20, flexShrink:0, lineHeight:1 }}>{step.icon}</span>
+                  <div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, letterSpacing:'0.15em', textTransform:'uppercase', color:`${data.accentColor}88`, marginBottom:2 }}>{step.label}</div>
+                    <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(220,210,190,0.85)', lineHeight:1.5 }}>{step.text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:10, background:`${data.accentColor}18`, border:`1px solid ${data.accentColor}44`, borderRadius:8, padding:'8px 14px', marginBottom:20 }}>
+            <span style={{ fontSize:16 }}>⚔️</span>
+            <div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:'0.2em', textTransform:'uppercase', color:`${data.accentColor}99`, marginBottom:2 }}>Use This</div>
+              <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, fontWeight:700, color:data.accentColor }}>{data.skillHint}</div>
+            </div>
+          </div>
+          <button onClick={onDismiss} style={{ width:'100%', background:`linear-gradient(to bottom, ${data.accentColor}dd, ${data.accentColor}88)`, color:'#0a0906', border:'none', borderRadius:8, padding:'14px 24px', fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, letterSpacing:'0.1em', cursor:'pointer', transition:'all 0.2s' }}
+            onMouseOver={e => e.currentTarget.style.filter='brightness(1.1)'} onMouseOut={e => e.currentTarget.style.filter=''}>
+            Begin Phase {phase}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    SUB-COMPONENTS
@@ -369,8 +467,12 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
   const [phaseTransition, setPhaseTransition] = useState(null);
   const [roleHijackTurns, setRoleHijackTurns] = useState(0);
   const [shake,           setShake]           = useState(false);
+  const [mariHurt,        setMariHurt]        = useState(false);
   const [victory,         setVictory]         = useState(false);
   const [defeated,        setDefeated]        = useState(false);
+
+  /* ── Phase Briefing ── */
+  const [briefingPhase,   setBriefingPhase]   = useState(1);
 
   /* ── Floating dmg ── */
   const [dmgFloat,        setDmgFloat]        = useState(null);
@@ -396,6 +498,11 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
     setDmgFloat({ val, color });
     setFloatKey(k => k + 1);
     setTimeout(() => setDmgFloat(null), 1200);
+  };
+
+  const showHurt = () => {
+    setMariHurt(true);
+    setTimeout(() => setMariHurt(false), 700);
   };
 
   const markStepDone = stepId => {
@@ -499,7 +606,7 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
             setTokens(t => Math.min(mariMaxTokens, t + REGEN_TOKENS));
             addLog(`Tokens regenerated +${REGEN_TOKENS}.`, 'info');
             if (nextPhase === 3) { setCurrentStep('overwrite'); setVictory(true); addLog('Phase 3 — Overwrite Mode initiated.', 'warn'); }
-            else { setCurrentStep('recon'); }
+            else { setCurrentStep('recon'); setBriefingPhase(nextPhase); }
           }, 2300);
         } else {
           setCurrentStep('overwrite'); setVictory(true);
@@ -519,8 +626,8 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
     markStepDone('counter');
     let newHp = mariHp;
     if (result === 'Perfect') { addLog('Perfect block! Damage negated.', 'success'); showDmg(0, '#A6E22E'); }
-    else if (result === 'Good') { newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#FD971F'); addLog(`Good block — took ${actualDmg} reduced damage.`, 'info'); }
-    else { newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#c04040'); addLog(`Missed QTE — took ${actualDmg} HP damage!`, 'error'); setShake(true); setTimeout(() => setShake(false), 400); }
+    else if (result === 'Good') { newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#FD971F'); showHurt(); addLog(`Good block — took ${actualDmg} reduced damage.`, 'info'); }
+    else { newHp = Math.max(0, mariHp - actualDmg); setMariHp(newHp); showDmg(-actualDmg, '#c04040'); showHurt(); addLog(`Missed QTE — took ${actualDmg} HP damage!`, 'error'); setShake(true); setTimeout(() => setShake(false), 400); }
     if (roleHijackTurns > 0) { const rh = roleHijackTurns - 1; setRoleHijackTurns(rh); if (rh === 0) addLog('Role Hijacking wore off.', 'warn'); }
     if (newHp <= 0) { addLog("Mari's vitality reached zero!", 'error'); setTimeout(() => setDefeated(true), 800); return; }
     const rt = Math.min(mariMaxTokens, tokens + REGEN_TOKENS);
@@ -535,6 +642,7 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
     const atkDmg = Math.round(PHASE_DATA[phase].enemyAtk * 0.5);
     const newHp  = Math.max(0, mariHp - atkDmg);
     setMariHp(newHp);
+    showHurt();
     showDmg(-atkDmg, '#705c30');
     addLog(`Guarded — took ${atkDmg} reduced damage.`, 'info');
     const rt = Math.min(mariMaxTokens, tokens + REGEN_TOKENS);
@@ -574,6 +682,7 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
       {dmgFloat && <DmgFloat key={floatKey} value={dmgFloat.val} color={dmgFloat.color} />}
 
       {/* ── Overlays ── */}
+      {briefingPhase   && <PhaseBriefing phase={briefingPhase} onDismiss={() => setBriefingPhase(null)} />}
       {qteActive       && <QTEOverlay speed={halRisk >= HAL_WARNING ? 0.85 : 1.6} onResult={handleQTEResult} enemyDmg={qteEnemyDmg} />}
       {showIntel       && <IntelPanel phase={phase} scanned={scanned} onClose={handleCloseIntel} />}
       {phaseTransition && <PhaseTransition phase={phaseTransition} onDone={() => {}} />}
@@ -650,9 +759,9 @@ export default function BattleScreenAct2({ player, enemyData, onVictory, onDefea
             <img
               ref={mariImgRef}
               className="mari-img"
-              src={mariImg}
+              src={mariHurt ? mariHurtImg : mariImg}
               alt="Mari Voss"
-              style={{ height:'115%', width:'auto', objectFit:'contain', position:'relative', bottom:'-5%' }}
+              style={{ height:'115%', width:'auto', objectFit:'contain', position:'relative', bottom:'-5%', transition:'opacity 0.1s ease', filter: mariHurt ? 'drop-shadow(0 0 12px rgba(224,80,80,0.7))' : undefined }}
             />
           </div>
           {/* Bottom fade */}
