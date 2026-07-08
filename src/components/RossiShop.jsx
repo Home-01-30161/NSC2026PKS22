@@ -221,12 +221,31 @@ function ShopCard({ item, credits, owned, onBuy }) {
      onClose     : () => void
      onPurchase  : (item, newCredits, newSkills) => void
 ═══════════════════════════════════════════════════════════════════ */
-export default function RossiShop({ player, onClose, onPurchase, onReset }) {
+export default function RossiShop({ player, onClose, onPurchase, onSell, onReset }) {
   const [credits, setCredits]         = useState(player?.credits  ?? 0);
   const [owned,   setOwned]           = useState(player?.skills   ?? []);
+  const [inventory, setInventory]     = useState(player?.inventory ?? []);
   const [toast,   setToast]           = useState(null);      // { message, type }
   const [toastKey, setToastKey]       = useState(0);
   const [creditAnim, setCreditAnim]   = useState(false);
+
+  const SELL_PRICES = {
+    watch: 200,
+    key: 100,
+    letter: 50
+  };
+
+  const ITEM_NAMES = {
+    watch: "Pocket Watch",
+    key: "Brass Key",
+    letter: "Mysterious Letter"
+  };
+
+  const ITEM_ICONS = {
+    watch: "⌚",
+    key: "🔑",
+    letter: "✉️"
+  };
 
   /* ── Buy handler ── */
   const handleBuy = (item) => {
@@ -247,6 +266,23 @@ export default function RossiShop({ player, onClose, onPurchase, onReset }) {
 
     // Propagate to parent
     if (onPurchase) onPurchase(item, newCredits, newOwned);
+  };
+
+  const handleSell = (index) => {
+    const itemKey = inventory[index];
+    const price = SELL_PRICES[itemKey] || 50;
+    
+    const newCredits = credits + price;
+    const newInventory = [...inventory];
+    newInventory.splice(index, 1);
+    
+    setCredits(newCredits);
+    setInventory(newInventory);
+    setCreditAnim(true);
+    setTimeout(() => setCreditAnim(false), 600);
+    showToast(`Sold ${ITEM_NAMES[itemKey] || itemKey} for ${price} CR!`, 'success');
+    
+    if (onSell) onSell(newCredits, newInventory);
   };
 
   const handleReset = () => {
@@ -353,6 +389,38 @@ export default function RossiShop({ player, onClose, onPurchase, onReset }) {
               </div>
             );
           })}
+
+          {/* Sell Items Section */}
+          <div style={S.categorySection}>
+            <div style={S.categoryHeader}>
+              <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#552c00' }}>storefront</span>
+              <h3 style={{ fontFamily: "'Libre Caslon Text', serif", fontSize: 22, fontWeight: 700, color: '#552c00' }}>Sell Findings</h3>
+            </div>
+            {inventory.length === 0 ? (
+              <p style={{ fontFamily: "'Source Serif 4', serif", fontSize: 14, color: '#51443a', fontStyle: 'italic' }}>
+                You have no trinkets to sell. Explore town areas to find valuables.
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
+                {inventory.map((itemKey, idx) => (
+                  <div key={idx} className="shop-card" style={{ ...S.card, padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>{ITEM_ICONS[itemKey] || '📦'}</div>
+                    <div style={{ fontFamily: "'Libre Caslon Text', serif", fontSize: 15, fontWeight: 700, color: '#8c4f10', marginBottom: 4 }}>
+                      {ITEM_NAMES[itemKey] || itemKey}
+                    </div>
+                    <div style={S.priceTag}>+{SELL_PRICES[itemKey] || 50} CR</div>
+                    <button
+                      className="copper-btn"
+                      onClick={() => handleSell(idx)}
+                      style={{ width: '100%', padding: '6px 0', marginTop: 12 }}
+                    >
+                      Sell
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Action buttons */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 16, paddingTop: 8, paddingBottom: 16 }}>

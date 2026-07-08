@@ -121,10 +121,13 @@ ${prompt}
     try {
       const parsed = await evaluatePrompt(prompt);
 
-      const scores = parsed.scores;
-      const avg = Math.round(Object.values(scores).reduce((s, v) => s + v, 0) / 5 * 5); // scale to 100
+      // Handle alternate destroy ending
+      if (parsed.destroyed) {
+        if (onComplete) onComplete({ destroyed: true });
+        return;
+      }
 
-      setResult({ scores, feedback: parsed.feedback, avg });
+      setResult({ scores: parsed.scores, feedback: parsed.feedback, avg: parsed.avg });
     } catch (err) {
       // Fallback: local mock evaluation if serverless function is unavailable
       console.warn('Serverless evaluate unavailable, using mock evaluation:', err.message);

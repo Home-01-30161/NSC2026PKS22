@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Escape Victorian Brussels</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap');
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: radial-gradient(ellipse at center, #2a2118 0%, #100c08 100%);
+    color: #e8dcc0;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #game-wrap {
+    max-width: 840px;
+    width: 100%;
+    padding: 18px 24px 22px;
+    background: linear-gradient(180deg, #241a10 0%, #1a130c 100%);
+    border: 3px double #a8842f;
+    border-radius: 6px;
+    box-shadow: 0 0 0 6px #100c08, 0 0 40px rgba(0,0,0,0.8) inset, 0 10px 40px rgba(0,0,0,0.6);
+  }
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    text-align: center;
+    margin: 0 0 4px;
+    letter-spacing: 2px;
+    font-size: 28px;
+    color: #d9b869;
+    text-shadow: 0 2px 4px #000;
+  }
+  #subtitle {
+    text-align: center;
+    font-style: italic;
+    color: #a89a78;
+    margin-bottom: 12px;
+    font-size: 16px;
+    border-bottom: 1px solid #5a4a30;
+    padding-bottom: 10px;
+  }
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 10px;
+    font-size: 18px;
+    flex-wrap: wrap;
+  }
+  #health-wrap { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px; }
+  #health-bar-bg {
+    flex: 1;
+    height: 18px;
+    background: #0d0a07;
+    border: 1px solid #a8842f;
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: inset 0 0 6px #000;
+  }
+  #health-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #7a1f1f, #b5442e, #c98a3a);
+    transition: width 0.25s ease;
+  }
+  .stat { white-space: nowrap; color: #d9b869; }
+  #canvas-wrap {
+    position: relative;
+    border: 4px solid #6b4a26;
+    box-shadow: 0 0 0 2px #2b1d14, inset 0 0 40px rgba(0,0,0,0.6);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  canvas { display: block; width: 100%; height: auto; background: #221a12; }
+  #vignette {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    box-shadow: inset 0 0 90px 30px rgba(0,0,0,0.55);
+  }
+  #msg {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 16px;
+    color: #b8a888;
+    font-style: italic;
+  }
+  #overlay {
+    position: absolute; inset: 0;
+    background: rgba(10, 7, 4, 0.88);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  #overlay.hidden { display: none; }
+  #overlay-content {
+    padding: 24px 34px;
+    border: 2px solid #a8842f;
+    background: #1a130c;
+    border-radius: 6px;
+    max-width: 80%;
+  }
+  #overlay-title { font-family: 'Playfair Display', Georgia, serif; color: #d9b869; font-size: 26px; margin: 0 0 10px; }
+  #overlay-text { color: #cbb98f; font-size: 17px; margin-bottom: 16px; }
+  #restart-btn {
+    font-family: 'Playfair Display', Georgia, serif;
+    background: linear-gradient(180deg, #a8842f, #7a5c1f);
+    color: #1a130c;
+    border: none;
+    padding: 10px 22px;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+  #restart-btn:hover { filter: brightness(1.1); }
+</style>
+</head>
+<body>
+<div id="game-wrap">
+  <h1>Escape Victorian Brussels</h1>
+  <div id="subtitle">A gaslit stroll through cobblestone and canal &mdash; gather your effects and find the city gate</div>
+  <div id="hud">
+    <div id="health-wrap">
+      <span class="stat">Health</span>
+      <div id="health-bar-bg"><div id="health-bar-fill"></div></div>
+    </div>
+    <div class="stat">Shillings: <span id="coin-count">0</span> / <span id="coin-total">0</span></div>
+    <div class="stat">Potions used: <span id="potion-count">0</span></div>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="game" width="800" height="576"></canvas>
+    <div id="vignette"></div>
+    <div id="overlay" class="hidden">
+      <div id="overlay-content">
+        <h2 id="overlay-title"></h2>
+        <p id="overlay-text"></p>
+        <button id="restart-btn">Play Again</button>
+      </div>
+    </div>
+  </div>
+  <div id="msg">Arrow keys / WASD to walk &middot; collect coins (♦) &amp; potions (✚) &middot; avoid the pickpockets &middot; the golden gate is your way out</div>
+</div>
+
+<script>
+const COLS = 25, ROWS = 18, TILE = 32;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+let grid, coins, heals, enemies, player, coinCount, potionCount, health, gameOver, win, invincibleUntil;
+let keys = {};
+let lastMoveTime = 0;
+const MOVE_INTERVAL = 130;
+
+function isWalkable(tile){
+  return tile === '.' || tile === 'G' || tile === 'B' || tile === 'E';
+}
+
+function initGrid(){
+  grid = [];
+  for(let r=0;r<ROWS;r++){
+    const row = [];
+    for(let c=0;c<COLS;c++) row.push('.');
+    grid.push(row);
+  }
+  // border walls
+  for(let c=0;c<COLS;c++){ grid[0][c]='#'; grid[ROWS-1][c]='#'; }
+  for(let r=0;r<ROWS;r++){ grid[r][0]='#'; grid[r][COLS-1]='#'; }
+  // gate opening (bottom wall)
+  grid[ROWS-1][12] = 'E';
+
+  // Victorian townhouse blocks
+  const buildings = [
+    [1,3,4,7], [1,3,18,23],
+    [5,8,4,7], [5,8,18,23],
+    [9,12,4,7], [9,12,18,23],
+    [14,16,4,7], [14,16,18,23]
+  ];
+  buildings.forEach(([r1,r2,c1,c2])=>{
+    for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) grid[r][c]='#';
+  });
+
+  // canal running down the left side
+  for(let r=1;r<ROWS-1;r++) grid[r][2] = '~';
+  grid[8][2] = 'B';
+  grid[9][2] = 'B';
+
+  // Grand Place plaza
+  for(let r=6;r<=11;r++) for(let c=9;c<=15;c++) if(grid[r][c]==='.') grid[r][c]='G';
+  grid[8][12] = 'F'; // fountain
+
+  // collectibles
+  const coinPositions = [[2,9],[2,16],[15,9],[15,16],[9,3],[9,17],[6,12],[11,3]];
+  const healPositions = [[6,9],[11,9],[6,17],[11,17],[8,13],[3,9]];
+
+  coins = coinPositions.map(([r,c])=>({r,c,active:true}));
+  heals = healPositions.map(([r,c])=>({r,c,active:true}));
+}
+
+function tile(r,c){
+  if(r<0||r>=ROWS||c<0||c>=COLS) return '#';
+  return grid[r][c];
+}
+
+function initGame(){
+  initGrid();
+  player = { row: 1, col: 9 };
+  coinCount = 0;
+  potionCount = 0;
+  health = 100;
+  gameOver = false;
+  win = false;
+  invincibleUntil = 0;
+  enemies = [
+    {row:13, col:9, lastMove:0},
+    {row:4, col:17, lastMove:0},
+    {row:15, col:17, lastMove:0}
+  ];
+  document.getElementById('coin-total').textContent = coins.length;
+  document.getElementById('overlay').classList.add('hidden');
+  updateHUD();
+}
+
+function updateHUD(){
+  document.getElementById('health-bar-fill').style.width = Math.max(0,health) + '%';
+  document.getElementById('coin-count').textContent = coinCount;
+  document.getElementById('potion-count').textContent = potionCount;
+}
+
+function collectAt(r,c){
+  const coin = coins.find(o=>o.active && o.r===r && o.c===c);
+  if(coin){ coin.active = false; coinCount++; }
+  const heal = heals.find(o=>o.active && o.r===r && o.c===c);
+  if(heal){
+    heal.active = false;
+    health = Math.min(100, health + 25);
+    potionCount++;
+  }
+  updateHUD();
+}
+
+function tryMovePlayer(dx,dy){
+  const nr = player.row + dy, nc = player.col + dx;
+  const t = tile(nr,nc);
+  if(!isWalkable(t)) return;
+  player.row = nr; player.col = nc;
+  collectAt(nr,nc);
+  if(t === 'E') triggerWin();
+}
+
+function updateEnemies(ts){
+  enemies.forEach(e=>{
+    if(ts - e.lastMove < 650) return;
+    e.lastMove = ts;
+    const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+    const shuffled = dirs.sort(()=>Math.random()-0.5);
+    for(const [dx,dy] of shuffled){
+      const nr=e.row+dy, nc=e.col+dx;
+      if(isWalkable(tile(nr,nc)) && tile(nr,nc)!=='E'){
+        e.row = nr; e.col = nc;
+        break;
+      }
+    }
+  });
+}
+
+function checkCollisions(ts){
+  if(ts < invincibleUntil) return;
+  for(const e of enemies){
+    if(e.row === player.row && e.col === player.col){
+      health -= 15;
+      invincibleUntil = ts + 900;
+      updateHUD();
+      if(health <= 0) triggerLose();
+      break;
+    }
+  }
+}
+
+function triggerWin(){
+  win = true;
+  document.getElementById('overlay-title').textContent = 'You have escaped Brussels!';
+  document.getElementById('overlay-text').textContent =
+    `You slip through the gate into the misty countryside with ${coinCount} of ${coins.length} shillings and ${potionCount} potions spent along the way.`;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function triggerLose(){
+  gameOver = true;
+  document.getElementById('overlay-title').textContent = 'You collapsed in the fog...';
+  document.getElementById('overlay-text').textContent =
+    `The pickpockets got the better of you. You gathered ${coinCount} shillings before your health gave out. Try again?`;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+// --- Rendering ---
+function drawTile(r,c){
+  const x = c*TILE, y = r*TILE;
+  const t = grid[r][c];
+  switch(t){
+    case '#':
+      ctx.fillStyle = '#4a3527';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#6b4a35';
+      ctx.fillRect(x,y,TILE,8);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.strokeRect(x+0.5,y+0.5,TILE-1,TILE-1);
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.fillRect(x+6,y+14,6,8);
+      ctx.fillRect(x+TILE-14,y+14,6,8);
+      break;
+    case '.':
+      ctx.fillStyle = ((r+c)%2===0) ? '#8a8272' : '#847c6c';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.strokeRect(x+0.5,y+0.5,TILE-1,TILE-1);
+      break;
+    case 'G':
+      ctx.fillStyle = '#5c7a4f';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      ctx.fillRect(x,y,TILE,TILE/2);
+      break;
+    case '~':
+      ctx.fillStyle = '#33545e';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath();
+      ctx.moveTo(x+4,y+16); ctx.lineTo(x+TILE-4,y+16);
+      ctx.stroke();
+      break;
+    case 'B':
+      ctx.fillStyle = '#7a5c3a';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      for(let i=0;i<4;i++){
+        ctx.beginPath();
+        ctx.moveTo(x+i*8,y); ctx.lineTo(x+i*8,y+TILE);
+        ctx.stroke();
+      }
+      break;
+    case 'F':
+      ctx.fillStyle = '#847c6c';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#9fb8c9';
+      ctx.beginPath();
+      ctx.arc(x+TILE/2,y+TILE/2,TILE/2-4,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = '#5c7a4f';
+      ctx.stroke();
+      break;
+    case 'E':
+      ctx.fillStyle = '#2a2118';
+      ctx.fillRect(x,y,TILE,TILE);
+      const glow = ctx.createRadialGradient(x+TILE/2,y+TILE/2,2,x+TILE/2,y+TILE/2,TILE/1.4);
+      glow.addColorStop(0,'rgba(217,184,105,0.9)');
+      glow.addColorStop(1,'rgba(217,184,105,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(x-TILE/2,y-TILE/2,TILE*2,TILE*2);
+      ctx.fillStyle = '#d9b869';
+      ctx.fillRect(x+8,y+2,TILE-16,TILE-4);
+      break;
+  }
+}
+
+function drawCollectibles(){
+  coins.forEach(o=>{
+    if(!o.active) return;
+    const x = o.c*TILE + TILE/2, y = o.r*TILE + TILE/2;
+    ctx.fillStyle = '#e8c84a';
+    ctx.strokeStyle = '#8a6a1a';
+    ctx.beginPath();
+    ctx.arc(x,y,8,0,Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#8a6a1a';
+    ctx.font = 'bold 10px Georgia';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('$',x,y+1);
+  });
+  heals.forEach(o=>{
+    if(!o.active) return;
+    const x = o.c*TILE + TILE/2, y = o.r*TILE + TILE/2;
+    ctx.fillStyle = '#e8dcc0';
+    ctx.strokeStyle = '#7a1f1f';
+    ctx.beginPath();
+    ctx.arc(x,y,8,0,Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#7a1f1f';
+    ctx.fillRect(x-6,y-1.5,12,3);
+    ctx.fillRect(x-1.5,y-6,3,12);
+  });
+}
+
+function drawEnemies(){
+  enemies.forEach(e=>{
+    const x = e.col*TILE + TILE/2, y = e.row*TILE + TILE/2;
+    ctx.fillStyle = '#241a2a';
+    ctx.beginPath();
+    ctx.ellipse(x,y+4,9,11,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#4a3a2a';
+    ctx.beginPath();
+    ctx.arc(x,y-8,6,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.fillRect(x-8,y-13,16,4); // top hat brim silhouette (shady figure)
+  });
+}
+
+function drawPlayer(){
+  const x = player.col*TILE + TILE/2, y = player.row*TILE + TILE/2;
+  const flashing = performance.now() < invincibleUntil && Math.floor(performance.now()/100)%2===0;
+  if(flashing) ctx.globalAlpha = 0.4;
+  // body
+  ctx.fillStyle = '#2c3e6b';
+  ctx.beginPath();
+  ctx.ellipse(x,y+5,8,11,0,0,Math.PI*2);
+  ctx.fill();
+  // head
+  ctx.fillStyle = '#d9b38c';
+  ctx.beginPath();
+  ctx.arc(x,y-8,6,0,Math.PI*2);
+  ctx.fill();
+  // top hat
+  ctx.fillStyle = '#151515';
+  ctx.fillRect(x-6,y-18,12,8);
+  ctx.fillRect(x-8,y-11,16,3);
+  ctx.globalAlpha = 1;
+}
+
+function render(){
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) drawTile(r,c);
+  drawCollectibles();
+  drawEnemies();
+  drawPlayer();
+}
+
+function loop(ts){
+  if(!gameOver && !win){
+    if(ts - lastMoveTime > MOVE_INTERVAL){
+      let dx=0, dy=0;
+      if(keys['ArrowUp']||keys['w']||keys['W']) dy=-1;
+      else if(keys['ArrowDown']||keys['s']||keys['S']) dy=1;
+      else if(keys['ArrowLeft']||keys['a']||keys['A']) dx=-1;
+      else if(keys['ArrowRight']||keys['d']||keys['D']) dx=1;
+      if(dx!==0||dy!==0){
+        tryMovePlayer(dx,dy);
+        lastMoveTime = ts;
+      }
+    }
+    updateEnemies(ts);
+    checkCollisions(ts);
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('keydown', e=>{
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+  keys[e.key] = true;
+});
+window.addEventListener('keyup', e=>{ keys[e.key] = false; });
+document.getElementById('restart-btn').addEventListener('click', initGame);
+
+initGame();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

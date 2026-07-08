@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Whitechapel, London — 1888</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-void:#0a0b0e;
+    --panel-bg:#221810;
+    --panel-bg-2:#2c2015;
+    --panel-border:#9a7a35;
+    --panel-border-dim:#6b5424;
+    --parchment:#e9dfc4;
+    --parchment-dim:#c9bd9e;
+    --amber:#f0b429;
+    --amber-dim:#b9860f;
+    --maroon:#7c1f1f;
+    --maroon-glow:#c94b3f;
+    --font-display:'UnifrakturMaguntia', cursive;
+    --font-heading:'Cinzel', serif;
+    --font-body:'IM Fell English', serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: radial-gradient(ellipse at 50% 0%, #171a20 0%, var(--bg-void) 65%);
+    color:var(--parchment);
+    font-family:var(--font-body);
+    overflow-x:hidden;
+  }
+  #app{
+    display:flex; flex-direction:column; align-items:center;
+    padding:22px 14px 40px;
+    min-height:100%;
+  }
+  header{
+    text-align:center;
+    margin-bottom:14px;
+  }
+  header h1{
+    font-family:var(--font-display);
+    font-weight:400;
+    font-size:clamp(30px,6vw,52px);
+    color:var(--amber);
+    margin:0 0 2px;
+    letter-spacing:1px;
+    text-shadow:0 0 18px rgba(240,180,41,0.35), 0 2px 0 #000;
+  }
+  header p{
+    font-family:var(--font-heading);
+    font-size:13px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--parchment-dim);
+    margin:0;
+  }
+  #game-wrap{
+    display:flex;
+    gap:16px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    justify-content:center;
+    position:relative;
+  }
+  #canvas-frame{
+    position:relative;
+    border:10px solid #171008;
+    border-radius:4px;
+    box-shadow:
+      0 0 0 2px var(--panel-border-dim),
+      0 0 0 6px #171008,
+      0 18px 40px rgba(0,0,0,0.6);
+    background:#000;
+  }
+  canvas{
+    display:block;
+    image-rendering:pixelated;
+    border-radius:1px;
+  }
+  #panel{
+    width:250px;
+    background:linear-gradient(180deg, var(--panel-bg-2), var(--panel-bg));
+    border:2px solid var(--panel-border);
+    border-radius:6px;
+    padding:16px 16px 14px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.35);
+  }
+  #panel h2{
+    font-family:var(--font-heading);
+    font-size:13px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--amber);
+    border-bottom:1px solid var(--panel-border-dim);
+    padding-bottom:6px;
+    margin:0 0 8px;
+  }
+  .section{margin-bottom:16px;}
+  #hp-bar-outer{
+    width:100%; height:16px;
+    background:#160c0c;
+    border:1px solid var(--panel-border-dim);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  #hp-bar-inner{
+    height:100%;
+    width:55%;
+    background:linear-gradient(90deg, var(--maroon), var(--maroon-glow));
+    transition:width .25s ease;
+  }
+  #hp-text{
+    font-size:13px; margin-top:4px; color:var(--parchment-dim);
+    font-family:var(--font-heading); letter-spacing:1px;
+  }
+  #gold-row{
+    display:flex; align-items:center; gap:8px;
+    font-family:var(--font-heading); font-size:15px;
+  }
+  #satchel-grid{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:6px;
+  }
+  .slot{
+    aspect-ratio:1/1;
+    border:1px solid var(--panel-border-dim);
+    border-radius:4px;
+    background:rgba(0,0,0,0.3);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px;
+    position:relative;
+  }
+  .slot.filled{
+    background:rgba(240,180,41,0.08);
+    border-color:var(--amber-dim);
+  }
+  #satchel-count{
+    font-size:12px; color:var(--parchment-dim); margin-top:6px; font-family:var(--font-heading); letter-spacing:1px;
+  }
+  #controls-list{
+    font-size:14px; line-height:1.5; color:var(--parchment-dim); margin:0; padding-left:0; list-style:none;
+  }
+  #controls-list li{margin-bottom:4px;}
+  #controls-list b{color:var(--amber);}
+  #toast{
+    position:absolute;
+    top:10px; left:50%;
+    transform:translateX(-50%);
+    background:rgba(20,14,8,0.92);
+    border:1px solid var(--amber-dim);
+    color:var(--parchment);
+    padding:8px 16px;
+    border-radius:5px;
+    font-family:var(--font-heading);
+    font-size:13px;
+    letter-spacing:0.5px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .35s ease, transform .35s ease;
+    white-space:nowrap;
+    z-index:20;
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(6px); }
+  #win-overlay{
+    position:absolute; inset:0;
+    background:rgba(6,6,8,0.88);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index:30;
+    border-radius:2px;
+  }
+  #win-overlay.show{ display:flex; }
+  #win-card{
+    background:linear-gradient(180deg, var(--panel-bg-2), var(--panel-bg));
+    border:2px solid var(--amber-dim);
+    border-radius:8px;
+    padding:26px 30px;
+    text-align:center;
+    max-width:340px;
+    box-shadow:0 0 40px rgba(240,180,41,0.15);
+  }
+  #win-card h2{
+    font-family:var(--font-display);
+    font-weight:400;
+    font-size:30px;
+    color:var(--amber);
+    margin:0 0 10px;
+  }
+  #win-card p{
+    font-size:16px; color:var(--parchment-dim); margin:6px 0;
+  }
+  #win-card button{
+    margin-top:16px;
+    background:var(--amber-dim);
+    color:#1a1006;
+    border:none;
+    font-family:var(--font-heading);
+    letter-spacing:1px;
+    font-size:13px;
+    padding:10px 20px;
+    border-radius:4px;
+    cursor:pointer;
+    text-transform:uppercase;
+  }
+  #win-card button:hover{ background:var(--amber); }
+  footer{
+    margin-top:14px;
+    font-size:13px;
+    color:var(--parchment-dim);
+    text-align:center;
+    max-width:600px;
+  }
+  @media (max-width:640px){
+    #game-wrap{ flex-direction:column; align-items:center; }
+    #panel{ width:100%; max-width:400px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Whitechapel, London</h1>
+    <p>1888 — find your way through the fog</p>
+  </header>
+
+  <div id="game-wrap">
+    <div id="canvas-frame">
+      <canvas id="game" width="720" height="528"></canvas>
+      <div id="toast"></div>
+      <div id="win-overlay">
+        <div id="win-card">
+          <h2>The Fog Parts</h2>
+          <p id="win-stats-hp"></p>
+          <p id="win-stats-gold"></p>
+          <p id="win-stats-items"></p>
+          <button id="restart-btn">Walk the streets again</button>
+        </div>
+      </div>
+    </div>
+
+    <aside id="panel">
+      <div class="section">
+        <h2>Vitals</h2>
+        <div id="hp-bar-outer"><div id="hp-bar-inner"></div></div>
+        <div id="hp-text">55 / 100 HP</div>
+      </div>
+      <div class="section">
+        <h2>Purse</h2>
+        <div id="gold-row"><span>🪙</span><span id="gold-count">0</span> sovereigns</div>
+      </div>
+      <div class="section">
+        <h2>Satchel</h2>
+        <div id="satchel-grid"></div>
+        <div id="satchel-count">0 / 10 items found</div>
+      </div>
+      <div class="section">
+        <h2>Guidance</h2>
+        <ul id="controls-list">
+          <li><b>Move:</b> Arrow keys or WASD</li>
+          <li><b>Collect:</b> walk over an item</li>
+          <li><b>Leave:</b> reach the iron gate</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer>A tonic mends your wounds. A sovereign lines your purse. Somewhere past the gaslamps, an iron gate leads out of the district.</footer>
+</div>
+
+<script>
+(function(){
+  const TILE = 48, COLS = 15, ROWS = 11;
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  // Map layout: '#'=wall/building, '.'=street, 'G'=exit gate
+  const mapRows = [
+    "###############",
+    "#.............#",
+    "#.###.###.###.#",
+    "#.............#",
+    "#.............#",
+    "#.............G",
+    "#.............#",
+    "#.###.###.###.#",
+    "#.............#",
+    "#.............#",
+    "###############"
+  ];
+
+  function tileAt(col, row){
+    if(row < 0 || row >= ROWS || col < 0 || col >= COLS) return '#';
+    return mapRows[row][col];
+  }
+  function isBorder(col,row){
+    return row===0 || row===ROWS-1 || col===0 || col===COLS-1;
+  }
+
+  // Deterministic pseudo-random for window glow pattern
+  function winGlow(col,row){
+    return ((col*7 + row*13) % 3) === 0;
+  }
+
+  const lampPositions = [[7,1],[7,9],[1,3],[3,13],[9,7]]; // [col,row] decorative, non-blocking
+
+  const ITEM_TYPES = {
+    tonic:  { icon:"🧪", name:"Healing Tonic", type:"heal" },
+    coin:   { icon:"🪙", name:"Gold Sovereign", type:"gold" },
+    watch:  { icon:"⌚", name:"Pocket Watch", type:"trinket" },
+    key:    { icon:"🔑", name:"Brass Key", type:"trinket" },
+    letter: { icon:"✉️", name:"Mysterious Letter", type:"trinket" }
+  };
+
+  let items = [
+    { col:3,  row:1, kind:"tonic" },
+    { col:11, row:1, kind:"tonic" },
+    { col:3,  row:9, kind:"tonic" },
+    { col:7,  row:3, kind:"coin" },
+    { col:13, row:4, kind:"coin" },
+    { col:2,  row:6, kind:"coin" },
+    { col:12, row:8, kind:"coin" },
+    { col:5,  row:2, kind:"watch" },
+    { col:9,  row:7, kind:"key" },
+    { col:7,  row:5, kind:"letter" }
+  ].map(it => ({...it, collected:false}));
+
+  const TOTAL_ITEMS = items.length;
+
+  const player = {
+    col:1, row:1,
+    x:1*TILE, y:1*TILE,
+    targetCol:1, targetRow:1,
+    moving:false,
+    speed:0.22 // pixels per ms
+  };
+
+  let hp = 55, maxHp = 100, gold = 0;
+  const inventory = []; // list of kind strings collected (trinkets + tonics + coins)
+  let gameWon = false;
+
+  const keys = {};
+  window.addEventListener('keydown', e=>{
+    keys[e.key.toLowerCase()] = true;
+    if(["arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase())) e.preventDefault();
+  });
+  window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+
+  function desiredDir(){
+    if(keys['arrowup'] || keys['w']) return [0,-1];
+    if(keys['arrowdown']|| keys['s']) return [0,1];
+    if(keys['arrowleft']|| keys['a']) return [-1,0];
+    if(keys['arrowright']||keys['d']) return [1,0];
+    return null;
+  }
+
+  function tryPickup(col,row){
+    const it = items.find(i => !i.collected && i.col===col && i.row===row);
+    if(!it) return;
+    it.collected = true;
+    const def = ITEM_TYPES[it.kind];
+    if(def.type === "heal"){
+      hp = Math.min(maxHp, hp + 25);
+      showToast(`Found: ${def.name} (+25 HP)`);
+    } else if(def.type === "gold"){
+      gold += 1;
+      showToast(`Found: ${def.name}`);
+    } else {
+      showToast(`Found: ${def.name}`);
+    }
+    inventory.push(it.kind);
+    updateUI();
+  }
+
+  function checkGate(col,row){
+    if(tileAt(col,row) === 'G'){
+      triggerWin();
+    }
+  }
+
+  let toastTimer = null;
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> t.classList.remove('show'), 1800);
+  }
+
+  function triggerWin(){
+    if(gameWon) return;
+    gameWon = true;
+    document.getElementById('win-stats-hp').textContent = `Vitals: ${hp} / ${maxHp} HP`;
+    document.getElementById('win-stats-gold').textContent = `Purse: ${gold} sovereigns`;
+    document.getElementById('win-stats-items').textContent = `Satchel: ${inventory.length} / ${TOTAL_ITEMS} items found`;
+    document.getElementById('win-overlay').classList.add('show');
+  }
+
+  document.getElementById('restart-btn').addEventListener('click', ()=> location.reload());
+
+  function updateUI(){
+    document.getElementById('hp-bar-inner').style.width = (hp/maxHp*100) + '%';
+    document.getElementById('hp-text').textContent = `${hp} / ${maxHp} HP`;
+    document.getElementById('gold-count').textContent = gold;
+    document.getElementById('satchel-count').textContent = `${inventory.length} / ${TOTAL_ITEMS} items found`;
+    const grid = document.getElementById('satchel-grid');
+    grid.innerHTML = '';
+    for(let i=0;i<10;i++){
+      const slot = document.createElement('div');
+      slot.className = 'slot' + (inventory[i] ? ' filled' : '');
+      if(inventory[i]) slot.textContent = ITEM_TYPES[inventory[i]].icon;
+      grid.appendChild(slot);
+    }
+  }
+
+  // ---------- Rendering ----------
+  function drawStreetTile(px,py,col,row){
+    ctx.fillStyle = ((col+row)%2===0) ? '#4b4b53' : '#454550';
+    ctx.fillRect(px,py,TILE,TILE);
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px+0.5,py+0.5,TILE-1,TILE-1);
+    // cobble specks
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath();
+    ctx.arc(px+12,py+14,3,0,7);
+    ctx.arc(px+34,py+30,2.5,0,7);
+    ctx.arc(px+22,py+38,2,0,7);
+    ctx.fill();
+  }
+
+  function drawWallTile(px,py,col,row){
+    const border = isBorder(col,row);
+    if(border){
+      // stone city wall
+      ctx.fillStyle = '#33363c';
+      ctx.fillRect(px,py,TILE,TILE);
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      ctx.fillRect(px+4,py+4,TILE-8,6);
+    } else {
+      // brick building
+      ctx.fillStyle = '#5c2e23';
+      ctx.fillRect(px,py,TILE,TILE);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 1;
+      for(let by=0; by<TILE; by+=8){
+        ctx.beginPath();
+        ctx.moveTo(px,py+by+0.5);
+        ctx.lineTo(px+TILE,py+by+0.5);
+        ctx.stroke();
+      }
+      const offset = (row%2===0) ? 0 : 8;
+      for(let bx=-8; bx<TILE; bx+=16){
+        ctx.beginPath();
+        ctx.moveTo(px+bx+offset+0.5, py);
+        ctx.lineTo(px+bx+offset+0.5, py+TILE);
+        ctx.stroke();
+      }
+      // roof cap if tile above isn't wall
+      if(tileAt(col,row-1) !== '#'){
+        ctx.fillStyle = '#2a1a14';
+        ctx.fillRect(px,py,TILE,6);
+      }
+      // window glow
+      if(winGlow(col,row)){
+        ctx.fillStyle = 'rgba(240,180,41,0.55)';
+        ctx.fillRect(px+TILE/2-6, py+TILE/2-6, 12, 12);
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.strokeRect(px+TILE/2-6, py+TILE/2-6, 12, 12);
+      }
+    }
+  }
+
+  function drawGateTile(px,py,t){
+    ctx.fillStyle = '#1b1e24';
+    ctx.fillRect(px,py,TILE,TILE);
+    const pulse = 0.5 + 0.5*Math.sin(t/300);
+    const grad = ctx.createRadialGradient(px+TILE/2,py+TILE/2,2,px+TILE/2,py+TILE/2,TILE*0.9);
+    grad.addColorStop(0, `rgba(240,180,41,${0.5+0.3*pulse})`);
+    grad.addColorStop(1, 'rgba(240,180,41,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(px-TILE,py-TILE,TILE*3,TILE*3);
+    // iron bars
+    ctx.strokeStyle = '#151515';
+    ctx.lineWidth = 4;
+    for(let i=0;i<3;i++){
+      ctx.beginPath();
+      ctx.moveTo(px+8+i*14, py+4);
+      ctx.lineTo(px+8+i*14, py+TILE-4);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#3a2a12';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(px+3,py+3,TILE-6,TILE-6);
+  }
+
+  function drawLamp(px,py,t){
+    const bx = px + TILE/2, by = py + TILE - 6;
+    ctx.strokeStyle = '#1c1c1c';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(bx,by);
+    ctx.lineTo(bx,by-30);
+    ctx.stroke();
+    const pulse = 0.6 + 0.4*Math.sin(t/400 + px);
+    const grad = ctx.createRadialGradient(bx,by-34,1,bx,by-34,26);
+    grad.addColorStop(0, `rgba(240,190,90,${0.65*pulse})`);
+    grad.addColorStop(1, 'rgba(240,190,90,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(bx-26,by-60,52,52);
+    ctx.fillStyle = '#2b2b2b';
+    ctx.fillRect(bx-5,by-38,10,10);
+    ctx.fillStyle = `rgba(255,220,140,${pulse})`;
+    ctx.fillRect(bx-3,by-36,6,6);
+  }
+
+  function drawItem(it,t){
+    if(it.collected) return;
+    const def = ITEM_TYPES[it.kind];
+    const bob = Math.sin(t/260 + it.col*3 + it.row) * 3;
+    const px = it.col*TILE + TILE/2;
+    const py = it.row*TILE + TILE/2 + bob;
+    ctx.save();
+    ctx.font = "24px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = 'rgba(240,180,41,0.6)';
+    ctx.shadowBlur = 8;
+    ctx.fillText(def.icon, px, py);
+    ctx.restore();
+  }
+
+  function drawPlayer(){
+    const px = player.x + TILE/2, py = player.y + TILE/2;
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(px, py+16, 12, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+    // coat
+    ctx.fillStyle = '#1e2733';
+    ctx.beginPath();
+    ctx.moveTo(px-10, py+16);
+    ctx.lineTo(px-8, py-2);
+    ctx.lineTo(px+8, py-2);
+    ctx.lineTo(px+10, py+16);
+    ctx.closePath();
+    ctx.fill();
+    // head
+    ctx.fillStyle = '#e3c19a';
+    ctx.beginPath();
+    ctx.arc(px, py-10, 7, 0, Math.PI*2);
+    ctx.fill();
+    // top hat
+    ctx.fillStyle = '#111';
+    ctx.fillRect(px-7, py-22, 14, 8);
+    ctx.fillRect(px-9, py-15, 18, 3);
+  }
+
+  // Fog particles (signature atmosphere)
+  const fogBlobs = Array.from({length:6}, (_,i)=>({
+    x: Math.random()*canvas.width,
+    y: 80 + Math.random()*(canvas.height-160),
+    r: 70 + Math.random()*60,
+    speed: 0.006 + Math.random()*0.01,
+    phase: Math.random()*1000
+  }));
+
+  function drawFog(t){
+    ctx.save();
+    fogBlobs.forEach(b=>{
+      const x = ((b.x + t*b.speed) % (canvas.width + 200)) - 100;
+      const grad = ctx.createRadialGradient(x,b.y,0,x,b.y,b.r);
+      grad.addColorStop(0, 'rgba(180,190,200,0.10)');
+      grad.addColorStop(1, 'rgba(180,190,200,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x,b.y,b.r,0,Math.PI*2);
+      ctx.fill();
+    });
+    ctx.restore();
+    // vignette
+    const vg = ctx.createRadialGradient(canvas.width/2,canvas.height/2,canvas.height/3,canvas.width/2,canvas.height/2,canvas.height*0.8);
+    vg.addColorStop(0,'rgba(0,0,0,0)');
+    vg.addColorStop(1,'rgba(0,0,0,0.45)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+
+  function render(t){
+    for(let row=0; row<ROWS; row++){
+      for(let col=0; col<COLS; col++){
+        const px = col*TILE, py = row*TILE;
+        const ch = tileAt(col,row);
+        if(ch === '#') drawWallTile(px,py,col,row);
+        else if(ch === 'G') drawGateTile(px,py,t);
+        else drawStreetTile(px,py,col,row);
+      }
+    }
+    lampPositions.forEach(([c,r])=> drawLamp(c*TILE, r*TILE, t));
+    items.forEach(it => drawItem(it,t));
+    drawPlayer();
+    drawFog(t);
+  }
+
+  // ---------- Game loop ----------
+  let lastTime = performance.now();
+  function loop(now){
+    const dt = now - lastTime;
+    lastTime = now;
+
+    if(!gameWon){
+      if(!player.moving){
+        const dir = desiredDir();
+        if(dir){
+          const nc = player.col + dir[0], nr = player.row + dir[1];
+          if(tileAt(nc,nr) !== '#'){
+            player.targetCol = nc; player.targetRow = nr;
+            player.moving = true;
+          }
+        }
+      } else {
+        const tx = player.targetCol*TILE, ty = player.targetRow*TILE;
+        const dx = tx - player.x, dy = ty - player.y;
+        const dist = Math.hypot(dx,dy);
+        const step = player.speed*dt;
+        if(dist <= step || dist === 0){
+          player.x = tx; player.y = ty;
+          player.col = player.targetCol; player.row = player.targetRow;
+          player.moving = false;
+          tryPickup(player.col, player.row);
+          checkGate(player.col, player.row);
+        } else {
+          player.x += (dx/dist)*step;
+          player.y += (dy/dist)*step;
+        }
+      }
+    }
+
+    render(now);
+    requestAnimationFrame(loop);
+  }
+
+  updateUI();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

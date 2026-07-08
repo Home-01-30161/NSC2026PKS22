@@ -207,7 +207,7 @@ function LockedToast({ visible }) {
 }
 
 /* ─── Enemy data loading overlay (before battle) ─────────────────── */
-function EnemyLoadOverlay({ enemy, onEnter }) {
+function EnemyLoadOverlay({ enemy, onEnter, onClose }) {
   const [entered, setEntered] = React.useState(false);
 
   const handleEnter = () => {
@@ -229,7 +229,20 @@ function EnemyLoadOverlay({ enemy, onEnter }) {
         gap: 16,
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
         animation: 'nodeEntrance 0.4s ease both',
+        position: 'relative',
       }}>
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: 12, right: 14,
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'rgba(200,169,106,0.5)', fontSize: 20, lineHeight: 1,
+            padding: 4,
+          }}
+          aria-label="Close"
+        >✕</button>
+
         {/* Act label */}
         <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: '0.25em', color: '#8B6914', textTransform: 'uppercase' }}>{enemy.act}</div>
 
@@ -286,6 +299,14 @@ function EnemyLoadOverlay({ enemy, onEnter }) {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onClose} style={{
+            fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 12, letterSpacing: '0.1em',
+            padding: '12px 20px',
+            background: 'rgba(44,26,6,0.5)',
+            color: 'rgba(200,169,106,0.7)',
+            border: '1px solid rgba(200,169,106,0.3)',
+            borderRadius: 8, cursor: 'pointer',
+          }}>← Back</button>
           <button onClick={handleEnter} disabled={entered} style={{
             flex: 1,
             fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 13, letterSpacing: '0.15em',
@@ -640,6 +661,7 @@ export default function WorldMap({ player, completedNodes = [], onEnterBattle, o
         <EnemyLoadOverlay
           enemy={selectedEnemy}
           onEnter={handleEnterBattle}
+          onClose={() => setSelectedEnemy(null)}
         />
       )}
 
@@ -656,6 +678,13 @@ export default function WorldMap({ player, completedNodes = [], onEnterBattle, o
               maxTokens: item.id === 'ctx_expand' ? (player?.maxTokens ?? 100) + 20 : (player?.maxTokens ?? 100),
               tokens: item.id === 'ctx_expand' ? (player?.tokens ?? 100) + 20 : (player?.tokens ?? 100),
               skillSlots: item.id === 'extra_slot' ? (player?.skillSlots ?? 3) + 1 : (player?.skillSlots ?? 3),
+            });
+          }}
+          onSell={(newCredits, newInventory) => {
+            if (onPlayerUpdate) onPlayerUpdate({
+              ...player,
+              credits: newCredits,
+              inventory: newInventory
             });
           }}
           onReset={(refundAmount, defaultSkills) => {

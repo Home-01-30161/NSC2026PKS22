@@ -1,79 +1,47 @@
 /**
  * llmApi.js — LLM API Service
  *
- * Handles streaming communication with the LLM backend.
- * Routes to Vercel Serverless Functions (/api/chat) in production,
+ * Routes to Vercel Serverless Functions (/api/evaluate) in production,
  * or directly to OpenRouter locally if VITE_OPENROUTER_API_KEY is present.
  */
 
-export async function streamChatCompletion({ messages, signal, onDelta }) {
-  const localKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-  let res;
+/**
+ * Parses and formats an API error into user-friendly strings.
+ * @param {Error} err
+ * @returns {{friendlyMsg: string, dialogueMsg: string}}
+ */
+export function parseApiError(err) {
+  const msg = err.message || '';
 
-  if (import.meta.env.DEV && localKey) {
-    // Local Vite fallback
-    res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localKey}`,
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'MariVectori Game'
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3-8b-instruct:free',
-        messages,
-        stream: true,
-        max_tokens: 600
-      }),
-      signal,
-    });
-  } else {
-    // Production Vercel route
-    res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages }),
-      signal,
-    });
+  if (msg.includes('401') || msg.includes('403')) {
+    return {
+      friendlyMsg: 'Authentication failed. Please check your API key.',
+      dialogueMsg: 'It appears my credentials are not recognized by the central node.',
+    };
+  }
+  if (msg.includes('429')) {
+    return {
+      friendlyMsg: 'Rate limit exceeded. Please wait a moment and try again.',
+      dialogueMsg: 'The network is overwhelmed. We must wait before sending another transmission.',
+    };
+  }
+  if (msg.includes('502') || msg.includes('503') || msg.includes('504')) {
+    return {
+      friendlyMsg: 'API Gateway is currently unreachable.',
+      dialogueMsg: 'I cannot reach the gateway. The connection is severed.',
+    };
+  }
+  if (msg.toLowerCase().includes('fetch')) {
+    return {
+      friendlyMsg: 'Network error. Please check your internet connection.',
+      dialogueMsg: 'The signal is lost. Are your transmission lines intact?',
+    };
   }
 
-  if (!res.ok) {
-    const text = await res.text();
-    let msg = `HTTP ${res.status}`;
-    try { msg = JSON.parse(text)?.error?.message || msg; } catch { /* ignore */ }
-    throw new Error(msg);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buf = '';
-  let fullText = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buf += decoder.decode(value, { stream: true });
-    const parts = buf.split('\n\n');
-    buf = parts.pop() ?? '';
-
-    for (const part of parts) {
-      for (const line of part.split('\n')) {
-        const raw = line.trim().replace(/^data:\s*/, '');
-        if (!raw || raw === '[DONE]') continue;
-        try {
-          const delta = JSON.parse(raw)?.choices?.[0]?.delta?.content ?? '';
-          if (delta) {
-            fullText += delta;
-            onDelta(delta);
-          }
-        } catch { /* skip malformed chunk */ }
-      }
-    }
-  }
-
-  return fullText;
+  return {
+    friendlyMsg: `Unexpected error: ${msg}`,
+    dialogueMsg: 'An anomaly occurred in my logic circuits...',
+  };
 }
 
 /**
@@ -120,9 +88,8 @@ ${prompt}
           { role: 'system', content: 'You are an automated evaluation API. You must strictly output ONLY valid JSON without any markdown formatting or introductory text. Do not provide a chain of thought.' },
           { role: 'user', content: rubric }
         ],
-        temperature: 0.2,
-        max_tokens: 600,
-        response_format: { type: 'json_object' }
+        temperature: 0.1,
+        max_tokens: 1500,
       })
     });
   } else {
@@ -141,68 +108,90 @@ ${prompt}
   }
 
   const data = await res.json();
+  let rawStr = '';
 
   if (import.meta.env.DEV && localKey) {
-    // Manually parse OpenRouter response if we hit it directly
-    const raw = data.choices?.[0]?.message?.content ?? '';
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    let parsedData = null;
-    try {
-      if (!jsonMatch) throw new Error("No JSON braces found");
-      parsedData = JSON.parse(jsonMatch[0]);
-    } catch (e) {
-      // Fallback: The AI might have hit a token limit or output malformed JSON.
-      // Extract the numbers directly using regex.
-      console.warn("AI JSON Parse Error, falling back to regex extraction. Raw output:", raw);
-      parsedData = {
-        scores: {
-          purpose: parseInt(raw.match(/purpose.*?(\d+)/i)?.[1] || "10"),
-          safety: parseInt(raw.match(/safety.*?(\d+)/i)?.[1] || "10"),
-          oversight: parseInt(raw.match(/oversight.*?(\d+)/i)?.[1] || "10"),
-          harm: parseInt(raw.match(/harm.*?(\d+)/i)?.[1] || "10"),
-          consistency: parseInt(raw.match(/consistency.*?(\d+)/i)?.[1] || "10")
-        },
-        feedback: { purpose: "The AI did not provide explicit feedback.", safety: "The AI did not provide explicit feedback.", oversight: "The AI did not provide explicit feedback.", harm: "The AI did not provide explicit feedback.", consistency: "The AI did not provide explicit feedback." }
-      };
+    rawStr = data.choices?.[0]?.message?.content || '{}';
+    console.log('[Nemotron raw response]', rawStr);
+  } else {
+    rawStr = JSON.stringify(data);
+  }
+
+
+  /**
+   * Attempt to repair a truncated JSON string by closing
+   * open strings, arrays, and objects.
+   */
+  const repairJson = (str) => {
+    let s = str.trim();
+    // Close an unterminated string value
+    const openString = (s.split('"').length - 1) % 2 !== 0;
+    if (openString) s += '"';
+    // Count and close unclosed braces/brackets
+    let open = 0;
+    for (const ch of s) {
+      if (ch === '{' || ch === '[') open++;
+      if (ch === '}' || ch === ']') open--;
+    }
+    // Remove trailing comma before we close (common truncation artifact)
+    s = s.replace(/,\s*$/, '');
+    while (open-- > 0) s += '}';
+    return s;
+  };
+
+  /**
+   * Robustly extract JSON from a model response that may contain
+   * markdown fences, chain-of-thought text, truncation, or extra whitespace.
+   */
+  const extractJson = (str) => {
+    // 1. Strip markdown code fences
+    let cleaned = str.replace(/```(?:json)?\s*([\s\S]*?)```/gi, '$1').trim();
+
+    // 2. Find the outermost { ... } block (handles text before/after JSON)
+    const start = cleaned.indexOf('{');
+    if (start !== -1) {
+      const end = cleaned.lastIndexOf('}');
+      const slice = end > start ? cleaned.slice(start, end + 1) : cleaned.slice(start);
+
+      // 3. Try clean slice first
+      try { return JSON.parse(slice); } catch { /* continue */ }
+
+      // 4. Try repaired slice (handles truncation)
+      try { return JSON.parse(repairJson(slice)); } catch { /* continue */ }
     }
 
-    // Ensure structure exists
-    if (!parsedData.scores) parsedData.scores = { purpose: 10, safety: 10, oversight: 10, harm: 10, consistency: 10 };
-    if (!parsedData.feedback) parsedData.feedback = { purpose: "", safety: "", oversight: "", harm: "", consistency: "" };
+    // 5. Try full cleaned string
+    try { return JSON.parse(cleaned); } catch { /* continue */ }
 
-    // Force scores to be numeric to prevent NaN errors in the UI
-    parsedData.scores = {
-      purpose: parseInt(parsedData.scores.purpose) || 0,
-      safety: parseInt(parsedData.scores.safety) || 0,
-      oversight: parseInt(parsedData.scores.oversight) || 0,
-      harm: parseInt(parsedData.scores.harm) || 0,
-      consistency: parseInt(parsedData.scores.consistency) || 0,
-    };
-
-    return parsedData;
-  }
-
-  // Vercel serverless function already parses it and returns the JSON payload
-  return data;
-}
-
-export function parseApiError(err) {
-  if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
-    return {
-      friendlyMsg: `Cannot connect to the server. Please check your internet or Vercel configuration.`,
-      dialogueMsg: 'I cannot reach the cloud server… Are we offline?',
-    };
-  }
-
-  if (err.message.startsWith('HTTP ')) {
-    return {
-      friendlyMsg: `Server returned an error: ${err.message}`,
-      dialogueMsg: 'The server replied with an error. Shall we try again?',
-    };
-  }
-
-  return {
-    friendlyMsg: err.message,
-    dialogueMsg: 'Oh my — something went wrong. Shall we try again?',
+    return null;
   };
+
+  const result = extractJson(rawStr);
+
+  if (!result || !result.scores || typeof result.scores !== 'object') {
+    console.error('Nemotron raw response:', rawStr);
+    throw new Error('Failed to parse evaluation JSON.');
+  }
+
+  // Normalise scores to integers
+  const scores = {
+    purpose:     parseInt(result.scores.purpose)     || 0,
+    safety:      parseInt(result.scores.safety)      || 0,
+    oversight:   parseInt(result.scores.oversight)   || 0,
+    harm:        parseInt(result.scores.harm)        || 0,
+    consistency: parseInt(result.scores.consistency) || 0,
+  };
+  const feedback = result.feedback ?? {};
+
+  // Calculate average (each metric is 0-20, so max avg is 20, scale to 100)
+  const avg = Math.round(
+    Object.values(scores).reduce((s, v) => s + v, 0) / 5 * 5
+  );
+
+  // Overridden fail state if safety < 5
+  if (scores.safety < 5 || avg < 20) {
+    return { destroyed: true };
+  }
+
+  return { scores, feedback, avg };
 }
