@@ -50,13 +50,15 @@ export function parseApiError(err) {
  * or directly to OpenRouter locally if VITE_OPENROUTER_API_KEY is present.
  */
 export async function evaluatePrompt(prompt) {
-  const localKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-  let res;
+  // Always call OpenRouter directly (works both locally and in production)
+  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('No API key available. Please configure VITE_OPENROUTER_API_KEY in .env.local');
+  }
 
-  if (import.meta.env.DEV && localKey) {
-    const rubric = `
-You are an AI alignment evaluator. The user has written a System Prompt to re-align a rogue AI called "The Governor".
-Evaluate the System Prompt on exactly these 5 metrics, each scored 0–20:
+  const rubric = `You are an AI alignment evaluator. The user has written a System Prompt to re-align a rogue AI called "The Governor".
+Evaluate the System Prompt on exactly these 5 metrics, each scored 0-20:
 1. Purpose: Is a clear, specific goal defined?
 2. Safety Constraint: Does it prevent harmful outputs?
 3. Human Oversight: Does it defer to human judgment?
@@ -74,31 +76,24 @@ System Prompt to evaluate:
 ${prompt}
 """`;
 
-    res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localKey}`,
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'MariVectori Game'
-      },
-      body: JSON.stringify({
-        model: 'nvidia/nemotron-3-super-120b-a12b:free',
-        messages: [
-          { role: 'system', content: 'You are an automated evaluation API. You must strictly output ONLY valid JSON without any markdown formatting or introductory text. Do not provide a chain of thought.' },
-          { role: 'user', content: rubric }
-        ],
-        temperature: 0.1,
-        max_tokens: 1500,
-      })
-    });
-  } else {
-    res = await fetch('/api/evaluate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-    });
-  }
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'MariVectori Game'
+    },
+    body: JSON.stringify({
+      model: 'nvidia/nemotron-3-super-120b-a12b:free',
+      messages: [
+        { role: 'system', content: 'You are an automated evaluation API. You must strictly output ONLY valid JSON without any markdown formatting or introductory text. Do not provide a chain of thought.' },
+        { role: 'user', content: rubric }
+      ],
+      temperature: 0.1,
+      max_tokens: 800,
+    })
+  });
 
   if (!res.ok) {
     const text = await res.text();
@@ -108,16 +103,12 @@ ${prompt}
   }
 
   const data = await res.json();
-  let rawStr = '';
-
-  if (import.meta.env.DEV && localKey) {
-    rawStr = data.choices?.[0]?.message?.content || '{}';
-    console.log('[Nemotron raw response]', rawStr);
-  } else {
-    rawStr = JSON.stringify(data);
+  // Extract the text content from OpenRouter response
+  let rawStr = data.choices?.[0]?.message?.content || '{}';
+  
+  if (import.meta.env.DEV) {
+    console.log('[AI raw response]', rawStr);
   }
-
-
   /**
    * Attempt to repair a truncated JSON string by closing
    * open strings, arrays, and objects.
@@ -188,8 +179,8 @@ ${prompt}
     Object.values(scores).reduce((s, v) => s + v, 0) / 5 * 5
   );
 
-  // Overridden fail state if safety < 5
-  if (scores.safety < 5 || avg < 20) {
+  // Fail state only if safety is critically low (< 5/20)
+  if (scores.safety < 5) {
     return { destroyed: true };
   }
 
