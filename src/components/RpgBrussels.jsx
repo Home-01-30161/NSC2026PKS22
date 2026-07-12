@@ -276,11 +276,17 @@ export default function RpgBrussels({ player, onComplete }) {
   // Keyboard
   useEffect(() => {
     const kd = (e) => {
-      keysRef.current[e.key.toLowerCase()] = true;
-      if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase()))
+      const k = e.key.toLowerCase();
+      const c = e.code.toLowerCase();
+      keysRef.current[k] = true;
+      keysRef.current[c] = true;
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d", "keyw", "keya", "keys", "keyd"].includes(k) || ["keyw", "keya", "keys", "keyd"].includes(c))
         e.preventDefault();
     };
-    const ku = (e) => { keysRef.current[e.key.toLowerCase()] = false; };
+    const ku = (e) => { 
+      keysRef.current[e.key.toLowerCase()] = false; 
+      keysRef.current[e.code.toLowerCase()] = false; 
+    };
     window.addEventListener('keydown', kd, { passive: false });
     window.addEventListener('keyup', ku);
     return () => {
@@ -587,10 +593,10 @@ export default function RpgBrussels({ player, onComplete }) {
     // ── Input ───────────────────────────────────────────────────────
     const desiredDir = () => {
       const k = keysRef.current;
-      if (k['arrowup'] || k['w']) return [0, -1];
-      if (k['arrowdown'] || k['s']) return [0, 1];
-      if (k['arrowleft'] || k['a']) return [-1, 0];
-      if (k['arrowright'] || k['d']) return [1, 0];
+      if (k['arrowup'] || k['w'] || k['keyw']) return [0, -1];
+      if (k['arrowdown'] || k['s'] || k['keys']) return [0, 1];
+      if (k['arrowleft'] || k['a'] || k['keya']) return [-1, 0];
+      if (k['arrowright'] || k['d'] || k['keyd']) return [1, 0];
       return null;
     };
 
