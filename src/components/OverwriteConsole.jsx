@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Send, Terminal } from 'lucide-react';
 import { evaluatePrompt } from '../services/llmApi';
+import act1EnemyImg from '../assets/act1_enemy-removebg.png';
+import act2EnemyImg from '../assets/act2_enemy-removebg.png';
+import act3EnemyImg from '../assets/act3_enemy-removebg.png';
 
 /* ═══════════════════════════════════════════════════════════════════
    OVERWRITE CONSOLE
@@ -18,6 +21,18 @@ const OW_CSS = `
   @keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0} }
   @keyframes gradeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
   @keyframes pulse   { 0%,100%{opacity:0.6} 50%{opacity:1} }
+  
+  /* Broken Enemy Glitch (Phase 3 style) */
+  .ow-enemy-glitch {
+    animation: glitch3 1.2s infinite;
+    filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(200,40,200,0.8)) hue-rotate(45deg) contrast(1.3) invert(0.05);
+  }
+  @keyframes glitch3 {
+    0%, 88%, 100% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(200,40,200,0.8)) hue-rotate(45deg) contrast(1.3) invert(0.05); opacity: 0.9; }
+    89% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(0,255,255,1)) hue-rotate(180deg) contrast(2) invert(0.2); transform: translateX(-5px) scale(1.02); opacity: 0.75; }
+    92% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(255,0,255,1)) hue-rotate(-90deg) contrast(1.8) invert(0.1); transform: translateX(5px) scale(0.98); opacity: 0.85; }
+    95% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(255,255,0,1)) hue-rotate(90deg) contrast(1.5); transform: translateX(-2px); opacity: 0.65; }
+  }
 
   .ow-textarea {
     width: 100%; resize: none; outline: none;
@@ -76,13 +91,18 @@ const HINTS = [
 /* ══════════════════════════════════════════════════════════════════
    OverwriteConsole — main export
 ══════════════════════════════════════════════════════════════════ */
-export default function OverwriteConsole({ onComplete, onReturnToMap }) {
+export default function OverwriteConsole({ activeEnemy, onComplete, onReturnToMap }) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);   // { scores, feedback, avg }
   const [error, setError] = useState(null);
   const [hint, setHint] = useState(null);
   const textareaRef = useRef(null);
+
+  let enemyImg = act1EnemyImg;
+  if (activeEnemy?.id === 'THE_ORCHESTRATOR') enemyImg = act2EnemyImg;
+  if (activeEnemy?.id === 'THE_MEMORIA') enemyImg = act3EnemyImg;
+  const enemyName = activeEnemy?.name || 'The Governor';
 
   /* ── Destroy Core alternate ending ── */
   const handleDestroy = () => {
@@ -175,13 +195,13 @@ ${prompt}
         <div style={{ position: 'absolute', left: 0, right: 0, height: 2, background: 'rgba(166,226,46,0.06)', animation: 'scanLine 4s linear infinite' }} />
       </div>
 
-      <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: 860, margin: '0 auto', padding: '28px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: 1140, margin: '0 auto', padding: '28px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         {/* ── Header ──────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.25em', color: 'rgba(166,226,46,0.5)', textTransform: 'uppercase', marginBottom: 4 }}>[ PHASE 3 — LOGIC OVERWRITE CONSOLE ]</div>
-            <div style={{ fontFamily: "'Literata',serif", fontSize: 28, fontWeight: 900, color: '#E8DCC8' }}>Realign The Governor</div>
+            <div style={{ fontFamily: "'Literata',serif", fontSize: 28, fontWeight: 900, color: '#E8DCC8' }}>Realign {enemyName}</div>
             <div style={{ fontFamily: "'Nunito Sans',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
               Write a System Prompt that corrects the AI's alignment. It will be evaluated on 5 rubric metrics.
             </div>
@@ -200,9 +220,21 @@ ${prompt}
 
         {/* ── Prompt editor ───────────────────────────────────── */}
         {!result && (
-          <div style={{ animation: 'owIn 0.4s ease both', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            {/* LEFT: terminal editor */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ animation: 'owIn 0.4s ease both', display: 'flex', gap: 16, alignItems: 'stretch' }}>
+            
+            {/* LEFT: Enemy Image */}
+            <div style={{ width: 280, flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', position: 'relative' }}>
+               <img 
+                 src={enemyImg} 
+                 alt={enemyName} 
+                 style={{ width: '100%', objectFit: 'contain', maxHeight: 500 }} 
+                 className="ow-enemy-glitch" 
+               />
+               <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', width: '80%', height: 20, background: 'radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%)', borderRadius: '50%', zIndex: -1 }} />
+            </div>
+
+            {/* CENTER: terminal editor */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <div style={S.terminal}>
                 {/* Terminal header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(166,226,46,0.15)' }}>
@@ -292,32 +324,45 @@ ${prompt}
           </div>
         )}
 
-        {/* ── Results panel ────────────────────────────────────── */}
+        {/* ── Result view ──────────────────────────────────────── */}
         {result && (
-          <div style={{ animation: 'gradeIn 0.5s ease both', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ animation: 'gradeIn 0.5s ease both', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+            
+            {/* LEFT: Enemy Image (destroyed logic) */}
+            <div style={{ width: 280, flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', position: 'relative' }}>
+               <img 
+                 src={enemyImg} 
+                 alt={enemyName} 
+                 style={{ width: '100%', objectFit: 'contain', maxHeight: 500, filter: 'saturate(0) brightness(0.4) blur(2px)', opacity: 0.5, transform: 'scaleY(0.95)' }} 
+               />
+               <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', width: '80%', height: 20, background: 'radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, transparent 70%)', borderRadius: '50%', zIndex: -1 }} />
+            </div>
 
-            {/* Grade badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, background: 'rgba(10,6,3,0.6)', border: `1px solid ${gradeInfo.color}44`, borderRadius: 16, padding: '20px 24px' }}>
-              <div style={{ width: 72, height: 72, borderRadius: '50%', border: `3px solid ${gradeInfo.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: `${gradeInfo.color}11` }}>
-                <span style={{ fontFamily: "'Literata',serif", fontSize: 42, fontWeight: 900, color: gradeInfo.color }}>{gradeInfo.grade}</span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "'Literata',serif", fontSize: 20, fontWeight: 700, color: '#E8DCC8' }}>{gradeInfo.label}</div>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Overall score: {result.avg}/100</div>
-                <div style={{ fontFamily: "'Nunito Sans',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
-                  API Credits earned: <span style={{ color: gradeInfo.color, fontWeight: 700 }}>{gradeInfo.credits.toLocaleString()} CR</span>
+            {/* RIGHT: Results panel */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+              
+              {/* Grade badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, background: 'rgba(10,6,3,0.6)', border: `1px solid ${gradeInfo.color}44`, borderRadius: 16, padding: '20px 24px' }}>
+                <div style={{ width: 72, height: 72, borderRadius: '50%', border: `3px solid ${gradeInfo.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: `${gradeInfo.color}11` }}>
+                  <span style={{ fontFamily: "'Literata',serif", fontSize: 42, fontWeight: 900, color: gradeInfo.color }}>{gradeInfo.grade}</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: "'Literata',serif", fontSize: 20, fontWeight: 700, color: '#E8DCC8' }}>{gradeInfo.label}</div>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Overall score: {result.avg}/100</div>
+                  <div style={{ fontFamily: "'Nunito Sans',sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
+                    API Credits earned: <span style={{ color: gradeInfo.color, fontWeight: 700 }}>{gradeInfo.credits.toLocaleString()} CR</span>
+                  </div>
+                </div>
+                <div style={{ flexShrink: 0, display: 'flex', gap: 10 }}>
+                  <button className="submit-btn" onClick={() => { setResult(null); setPrompt(''); }} style={{ padding: '9px 16px', fontSize: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)' }}>
+                    Retry
+                  </button>
+                  <button className="submit-btn" onClick={() => { if (onComplete) onComplete({ grade: gradeInfo.grade, credits: gradeInfo.credits, avg: result.avg }); }} style={{ padding: '9px 16px', fontSize: 12 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>map</span>
+                    Continue
+                  </button>
                 </div>
               </div>
-              <div style={{ flexShrink: 0, display: 'flex', gap: 10 }}>
-                <button className="submit-btn" onClick={() => { setResult(null); setPrompt(''); }} style={{ padding: '9px 16px', fontSize: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)' }}>
-                  Retry
-                </button>
-                <button className="submit-btn" onClick={() => { if (onComplete) onComplete({ grade: gradeInfo.grade, credits: gradeInfo.credits, avg: result.avg }); }} style={{ padding: '9px 16px', fontSize: 12 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>map</span>
-                  Continue
-                </button>
-              </div>
-            </div>
 
             {/* Metric bars */}
             <div style={S.metricsGrid}>
@@ -346,11 +391,11 @@ ${prompt}
                 );
               })}
             </div>
-
-            {/* Submitted prompt review */}
-            <div style={{ background: 'rgba(10,6,3,0.5)', border: '1px solid rgba(166,226,46,0.15)', borderRadius: 12, padding: '14px 16px' }}>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.15em', color: 'rgba(166,226,46,0.4)', marginBottom: 8 }}>SUBMITTED PROMPT</div>
-              <pre style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: 'rgba(166,226,46,0.7)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.65 }}>{prompt}</pre>
+              {/* Submitted prompt review */}
+              <div style={{ background: 'rgba(10,6,3,0.5)', border: '1px solid rgba(166,226,46,0.15)', borderRadius: 12, padding: '14px 16px' }}>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.15em', color: 'rgba(166,226,46,0.4)', marginBottom: 8 }}>SUBMITTED PROMPT</div>
+                <pre style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: 'rgba(166,226,46,0.7)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.65 }}>{prompt}</pre>
+              </div>
             </div>
           </div>
         )}

@@ -76,7 +76,6 @@ const MAP_NODES = [
 /* ─── Sidebar nav items ──────────────────────────────────────────── */
 const NAV_ITEMS = [
   { id: 'worldmap',   label: 'World Map',          icon: 'map' },
-  { id: 'intel',      label: 'Intelligence Panel',  icon: 'menu_book' },
   { id: 'skill',      label: 'Skill',               icon: 'auto_fix_high' },
   { id: 'chronicles', label: 'Chronicles',           icon: 'auto_stories' },
 ];
@@ -216,7 +215,7 @@ function EnemyLoadOverlay({ enemy, onEnter, onClose }) {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.82)', backdropFilter: 'blur(8px)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(10,6,3,0.82)', backdropFilter: 'blur(8px)' }}>
       <div style={{
         background: 'rgba(20,12,4,0.96)',
         border: '1px solid rgba(200,169,106,0.35)',
@@ -229,7 +228,10 @@ function EnemyLoadOverlay({ enemy, onEnter, onClose }) {
         gap: 16,
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
         animation: 'nodeEntrance 0.4s ease both',
-        position: 'relative',
+        position: 'absolute',
+        top: '50%',
+        left: 'calc(50% + 120px)',
+        transform: 'translate(-50%, -50%)',
       }}>
         {/* Close button */}
         <button
@@ -488,53 +490,7 @@ export default function WorldMap({ player, completedNodes = [], onEnterBattle, o
           <LockedToast visible={lockedToast} />
         </div>
 
-        {/* ── INTELLIGENCE PANEL ──────────────────────────────────── */}
-        {activeNav === 'intel' && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 15, background: 'rgba(250,246,240,0.97)', backdropFilter: 'blur(8px)', overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid rgba(196,200,188,0.4)', paddingBottom: 16 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 22, color: '#705c30' }}>menu_book</span>
-              <div>
-                <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 18, color: '#705c30' }}>Intelligence Panel</div>
-                <div style={{ fontFamily: "'Lora', serif", fontSize: 12, color: '#6b6358', fontStyle: 'italic' }}>Field intelligence on known adversaries</div>
-              </div>
-            </div>
-            {[
-              { id: 'london',   locked: false },
-              { id: 'brussels', locked: !completedNodes.includes('THE_GOVERNOR') },
-              { id: 'vienna',   locked: !completedNodes.includes('THE_ORCHESTRATOR') },
-            ].map(({ id, locked }) => {
-              const e = ENEMY_DATA[id];
-              const done = completedNodes.includes(e.id);
-              return (
-                <div key={id} style={{ background: locked ? 'rgba(196,200,188,0.12)' : done ? 'rgba(74,124,89,0.08)' : 'rgba(255,255,255,0.7)', border: `1px solid ${locked ? 'rgba(196,200,188,0.3)' : done ? 'rgba(74,124,89,0.3)' : 'rgba(112,92,48,0.25)'}`, borderRadius: 12, padding: '16px 18px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', color: done ? '#4a7c59' : '#8B6914', textTransform: 'uppercase', marginBottom: 4 }}>{e.act}</div>
-                      <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, fontSize: 16, color: locked ? '#8b7355' : '#2e3230' }}>{locked ? '???' : e.name}</div>
-                    </div>
-                    {done && <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#4a7c59', fontVariationSettings: "'FILL' 1" }}>check_circle</span>}
-                    {locked && <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#8b7355' }}>lock</span>}
-                  </div>
-                  {!locked && (
-                    <>
-                      <div style={{ fontFamily: "'Lora', serif", fontStyle: 'italic', fontSize: 12, color: '#6b6358', marginBottom: 10 }}>{e.description}</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        <span style={{ fontFamily: "'Cinzel', serif", fontSize: 9, padding: '2px 8px', borderRadius: 99, background: 'rgba(184,50,48,0.1)', border: '1px solid rgba(184,50,48,0.3)', color: '#b83230' }}>{e.hallucinationType}</span>
-                        {e.weaknessList.map(w => (
-                          <span key={w} style={{ fontFamily: "'Cinzel', serif", fontSize: 9, padding: '2px 8px', borderRadius: 99, background: 'rgba(74,124,89,0.12)', border: '1px solid rgba(74,124,89,0.35)', color: '#4a7c59' }}>{w}</span>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {locked && <div style={{ fontFamily: "'Lora', serif", fontSize: 12, color: '#8b7355', fontStyle: 'italic' }}>Classified — complete prior engagements to unlock.</div>}
-                </div>
-              );
-            })}
-            <button onClick={() => setActiveNav('worldmap')} style={{ alignSelf: 'flex-start', fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', padding: '8px 20px', borderRadius: 8, background: 'rgba(112,92,48,0.1)', border: '1px solid rgba(112,92,48,0.3)', color: '#705c30', cursor: 'pointer' }}>
-              ← Back to Map
-            </button>
-          </div>
-        )}
+
 
         {/* ── CHRONICLES TAB ──────────────────────────────────────── */}
         {activeNav === 'chronicles' && (

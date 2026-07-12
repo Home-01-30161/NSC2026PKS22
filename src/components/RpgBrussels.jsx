@@ -154,49 +154,53 @@ const MAP_DATA = [
 
 // ─── Collectible & enemy definitions ───────────────────────────────
 const ITEM_TYPES = {
-  franc:   { icon: "🪙", name: "Belgian Franc",       type: "gold"    },
-  tonic:   { icon: "🧪", name: "Apothecary Tonic",    type: "heal"    },
-  lens:    { icon: "🔍", name: "Jeweller's Lens",      type: "trinket" },
-  scroll:  { icon: "📜", name: "Coded Dispatch",       type: "trinket" },
-  lace:    { icon: "🎀", name: "Brussels Lace",        type: "trinket" },
-  gear:    { icon: "⚙️",  name: "Clockwork Gear",      type: "trinket" },
+  franc: { icon: "🪙", name: "Belgian Franc", type: "gold" },
+  tonic: { icon: "🧪", name: "Apothecary Tonic", type: "heal" },
+  lens: { icon: "🔍", name: "Jeweller's Lens", type: "trinket" },
+  scroll: { icon: "📜", name: "Coded Dispatch", type: "trinket" },
+  lace: { icon: "🎀", name: "Brussels Lace", type: "trinket" },
+  gear: { icon: "⚙️", name: "Clockwork Gear", type: "trinket" },
 };
 
 const INIT_ITEMS = [
-  { col: 2,  row: 1,  kind: "franc"  },
-  { col: 29, row: 1,  kind: "franc"  },
-  { col: 5,  row: 6,  kind: "tonic"  },
-  { col: 25, row: 6,  kind: "franc"  },
-  { col: 2,  row: 10, kind: "lens"   },
+  { col: 2, row: 1, kind: "franc" },
+  { col: 29, row: 1, kind: "franc" },
+  { col: 5, row: 6, kind: "tonic" },
+  { col: 25, row: 6, kind: "franc" },
+  { col: 2, row: 10, kind: "lens" },
   { col: 29, row: 10, kind: "scroll" },
-  { col: 13, row: 11, kind: "franc"  },
-  { col: 17, row: 11, kind: "franc"  },
-  { col: 2,  row: 15, kind: "tonic"  },
-  { col: 29, row: 15, kind: "lace"   },
-  { col: 7,  row: 15, kind: "franc"  },
-  { col: 24, row: 15, kind: "gear"   },
-  { col: 15, row: 6,  kind: "tonic"  },
-  { col: 15, row: 20, kind: "franc"  },
-  { col: 5,  row: 20, kind: "scroll" },
-  { col: 25, row: 20, kind: "franc"  },
+  { col: 13, row: 11, kind: "franc" },
+  { col: 17, row: 11, kind: "franc" },
+  { col: 2, row: 15, kind: "tonic" },
+  { col: 29, row: 15, kind: "lace" },
+  { col: 7, row: 15, kind: "franc" },
+  { col: 24, row: 15, kind: "gear" },
+  { col: 15, row: 6, kind: "tonic" },
+  { col: 15, row: 20, kind: "franc" },
+  { col: 5, row: 20, kind: "scroll" },
+  { col: 25, row: 20, kind: "franc" },
 ].map(it => ({ ...it, collected: false }));
 
 // Guard patrol routes (point A ↔ point B)
+const DETECT_RANGE = TILE * 3.5; // pixels — sight radius
+const CHASE_LINGER = 2800;       // ms to stay in chase after losing sight
+const CHASE_SPEED_M = 1.7;        // chase speed multiplier
+
 const INIT_GUARDS = [
-  { col: 5,  row: 6,  dir: 1, axis: 'col', min: 2,  max: 10, speed: 0.5 },
-  { col: 22, row: 6,  dir:-1, axis: 'col', min: 18, max: 27, speed: 0.4 },
-  { col: 5,  row: 15, dir: 1, axis: 'col', min: 2,  max: 10, speed: 0.55},
-  { col: 24, row: 15, dir:-1, axis: 'col', min: 18, max: 28, speed: 0.45},
-  { col: 15, row: 3,  dir: 1, axis: 'row', min: 1,  max: 5,  speed: 0.4 },
-  { col: 15, row: 17, dir: 1, axis: 'row', min: 16, max: 20, speed: 0.45},
+  { col: 5, row: 6, dir: 1, axis: 'col', min: 2, max: 10, speed: 1.25, chasing: false, chaseUntil: 0 },
+  { col: 22, row: 6, dir: -1, axis: 'col', min: 18, max: 27, speed: 1.05, chasing: false, chaseUntil: 0 },
+  { col: 5, row: 15, dir: 1, axis: 'col', min: 2, max: 10, speed: 1.35, chasing: false, chaseUntil: 0 },
+  { col: 24, row: 15, dir: -1, axis: 'col', min: 18, max: 28, speed: 1.15, chasing: false, chaseUntil: 0 },
+  { col: 15, row: 3, dir: 1, axis: 'row', min: 1, max: 5, speed: 1.05, chasing: false, chaseUntil: 0 },
+  { col: 15, row: 17, dir: 1, axis: 'row', min: 16, max: 20, speed: 1.15, chasing: false, chaseUntil: 0 },
 ];
 
 const LAMP_POSITIONS = [
-  [3,1],[13,1],[27,1],
-  [3,6],[15,6],[27,6],
-  [3,10],[28,10],
-  [3,15],[15,15],[27,15],
-  [3,20],[13,20],[27,20],
+  [3, 1], [13, 1], [27, 1],
+  [3, 6], [15, 6], [27, 6],
+  [3, 10], [28, 10],
+  [3, 15], [15, 15], [27, 15],
+  [3, 20], [13, 20], [27, 20],
 ];
 
 function tileAt(col, row) {
@@ -212,21 +216,22 @@ function isBorder(col, row) {
 
 export default function RpgBrussels({ player, onComplete }) {
   const canvasRef = useRef(null);
-  const toastRef  = useRef(null);
+  const toastRef = useRef(null);
 
-  const [localHp,   setLocalHp]   = useState(player?.hp   ?? 55);
-  const [localInv,  setLocalInv]  = useState([]);
+  const [localHp, setLocalHp] = useState(player?.hp ?? 55);
+  const [localInv, setLocalInv] = useState([]);
   const [localGold, setLocalGold] = useState(0);
-  const [danger,    setDanger]    = useState(0); // 0-100 alert level
+  const [danger, setDanger] = useState(0); // 0-100 alert level
 
   const maxHp = player?.maxHp ?? 100;
 
-  const keysRef  = useRef({});
+  const keysRef = useRef({});
   const stateRef = useRef({
     hp: player?.hp ?? 55,
     gold: 0,
     inv: [],
     danger: 0,
+    respawns: 0,
     items: JSON.parse(JSON.stringify(INIT_ITEMS)),
     gameWon: false,
     invincibleUntil: 0,
@@ -272,7 +277,7 @@ export default function RpgBrussels({ player, onComplete }) {
   useEffect(() => {
     const kd = (e) => {
       keysRef.current[e.key.toLowerCase()] = true;
-      if (["arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase()))
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase()))
         e.preventDefault();
     };
     const ku = (e) => { keysRef.current[e.key.toLowerCase()] = false; };
@@ -582,10 +587,10 @@ export default function RpgBrussels({ player, onComplete }) {
     // ── Input ───────────────────────────────────────────────────────
     const desiredDir = () => {
       const k = keysRef.current;
-      if (k['arrowup']    || k['w']) return [0, -1];
-      if (k['arrowdown']  || k['s']) return [0,  1];
-      if (k['arrowleft']  || k['a']) return [-1, 0];
-      if (k['arrowright'] || k['d']) return [1,  0];
+      if (k['arrowup'] || k['w']) return [0, -1];
+      if (k['arrowdown'] || k['s']) return [0, 1];
+      if (k['arrowleft'] || k['a']) return [-1, 0];
+      if (k['arrowright'] || k['d']) return [1, 0];
       return null;
     };
 
@@ -611,26 +616,68 @@ export default function RpgBrussels({ player, onComplete }) {
       setLocalInv([...state.inv]);
     };
 
-    // ── Guard update ────────────────────────────────────────────────
-    const updateGuards = (dt) => {
-      stateRef.current.guards.forEach(g => {
+    // ── Guard update — patrol + chase AI ────────────────────────────
+    const updateGuards = (dt, now) => {
+      const state = stateRef.current;
+      const px = state.player.x + TILE / 2;
+      const py = state.player.y + TILE / 2;
+
+      state.guards.forEach(g => {
         g.t += dt;
-        if (g.t < 1000 / 60) return; // clamp step rate
+        if (g.t < 1000 / 60) return;
         g.t = 0;
-        const step = g.speed;
-        if (g.axis === 'col') {
-          g.col += g.dir * step / TILE;
-          g.x = g.col * TILE;
-          if (g.col >= g.max || g.col <= g.min) { g.dir *= -1; g.col = Math.max(g.min, Math.min(g.max, g.col)); }
+
+        const gx = g.x + TILE / 2, gy = g.y + TILE / 2;
+        const dist = Math.hypot(px - gx, py - gy);
+
+        // Detection — enter chase mode
+        if (dist < DETECT_RANGE) {
+          g.chasing = true;
+          g.chaseUntil = now + CHASE_LINGER;
+        }
+
+        if (g.chasing && now < g.chaseUntil) {
+          // ── Chase mode: move toward player ──────────────────────
+          const chaseStep = g.speed * CHASE_SPEED_M;
+          const dx = px - gx, dy = py - gy;
+          const horizontal = Math.abs(dx) >= Math.abs(dy);
+
+          const tryMove = (dc, dr) => {
+            const nc = g.col + dc * chaseStep / TILE;
+            const nr = g.row + dr * chaseStep / TILE;
+            const tileC = Math.round(nc + dc * 0.5);
+            const tileR = Math.round(nr + dr * 0.5);
+            if (isWalkable(tileAt(tileC, Math.round(nr))) || isWalkable(tileAt(Math.round(nc), tileR))) {
+              g.col = nc; g.x = nc * TILE;
+              g.row = nr; g.y = nr * TILE;
+              return true;
+            }
+            return false;
+          };
+
+          if (horizontal) {
+            if (!tryMove(Math.sign(dx), 0)) tryMove(0, Math.sign(dy));
+          } else {
+            if (!tryMove(0, Math.sign(dy))) tryMove(Math.sign(dx), 0);
+          }
         } else {
-          g.row += g.dir * step / TILE;
-          g.y = g.row * TILE;
-          if (g.row >= g.max || g.row <= g.min) { g.dir *= -1; g.row = Math.max(g.min, Math.min(g.max, g.row)); }
+          // ── Patrol mode ──────────────────────────────────────────
+          g.chasing = false;
+          const step = g.speed;
+          if (g.axis === 'col') {
+            g.col += g.dir * step / TILE;
+            g.x = g.col * TILE;
+            if (g.col >= g.max || g.col <= g.min) { g.dir *= -1; g.col = Math.max(g.min, Math.min(g.max, g.col)); }
+          } else {
+            g.row += g.dir * step / TILE;
+            g.y = g.row * TILE;
+            if (g.row >= g.max || g.row <= g.min) { g.dir *= -1; g.row = Math.max(g.min, Math.min(g.max, g.row)); }
+          }
         }
       });
     };
 
-    // ── Guard collision ──────────────────────────────────────────────
+    // ── Guard collision + respawn ────────────────────────────────────
     const checkGuards = (now) => {
       const state = stateRef.current;
       if (now < state.invincibleUntil) return;
@@ -640,10 +687,23 @@ export default function RpgBrussels({ player, onComplete }) {
         const gx = g.x + TILE / 2, gy = g.y + TILE / 2;
         const dist = Math.hypot(px - gx, py - gy);
         if (dist < TILE * 0.85) {
-          state.hp = Math.max(0, state.hp - 14);
-          state.danger = Math.min(100, state.danger + 22);
-          state.invincibleUntil = now + 1000;
-          showToast('A guard spotted you! (-14 HP)');
+          state.hp = Math.max(0, state.hp - 18);
+          state.danger = Math.min(100, state.danger + 28);
+          state.invincibleUntil = now + 900;
+          if (state.hp <= 0) {
+            // ── RESPAWN ────────────────────────────────────────────
+            state.respawns += 1;
+            state.hp = player?.maxHp ?? 100;
+            state.player.col = 1; state.player.row = 1;
+            state.player.x = 1 * TILE; state.player.y = 1 * TILE;
+            state.player.targetCol = 1; state.player.targetRow = 1;
+            state.player.moving = false;
+            state.danger = Math.max(0, state.danger - 30);
+            state.invincibleUntil = now + 2200;
+            showToast(`Caught! Respawning… (×${state.respawns})`);
+          } else {
+            showToast('Guard spotted you! (−18 HP)');
+          }
           setLocalHp(state.hp);
           setDanger(state.danger);
           break;
@@ -697,7 +757,7 @@ export default function RpgBrussels({ player, onComplete }) {
           }
         }
 
-        updateGuards(dt);
+        updateGuards(dt, now);
         checkGuards(now);
       }
 
@@ -712,9 +772,9 @@ export default function RpgBrussels({ player, onComplete }) {
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
       const startCol = Math.floor(camX / TILE);
-      const endCol   = startCol + VIEW_COLS + 1;
+      const endCol = startCol + VIEW_COLS + 1;
       const startRow = Math.floor(camY / TILE);
-      const endRow   = startRow + VIEW_ROWS + 1;
+      const endRow = startRow + VIEW_ROWS + 1;
 
       // Tiles
       for (let row = startRow; row <= endRow; row++) {
@@ -722,7 +782,7 @@ export default function RpgBrussels({ player, onComplete }) {
           if (row < 0 || row >= MAP_ROWS || col < 0 || col >= MAP_COLS) continue;
           const px = col * TILE - camX, py = row * TILE - camY;
           const ch = tileAt(col, row);
-          if      (ch === '#') drawBuilding(px, py, col, row);
+          if (ch === '#') drawBuilding(px, py, col, row);
           else if (ch === '~') drawCanal(px, py, now);
           else if (ch === 'B') drawBridge(px, py);
           else if (ch === 'G') drawGrass(px, py);
@@ -730,7 +790,7 @@ export default function RpgBrussels({ player, onComplete }) {
           else if (ch === 'F') drawFountain(px, py, now);
           else if (ch === 'E') drawGate(px, py, now);
           else if (ch === 'X') drawSideExit(px, py);
-          else                 drawCobble(px, py, col, row);
+          else drawCobble(px, py, col, row);
         }
       }
 
@@ -767,7 +827,7 @@ export default function RpgBrussels({ player, onComplete }) {
       <style>{TOWN_CSS}</style>
       <div className="brussels-header">
         <h1>Brussels, Belgium</h1>
-        <p>1888 — evade the Orchestrator's guards and reach the city gate</p>
+        <p>evade the Orchestrator's guards and reach the city gate</p>
       </div>
 
       <div className="brussels-wrap">

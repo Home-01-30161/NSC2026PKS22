@@ -70,9 +70,31 @@ const BATTLE_CSS = `
   /* ── Enemy ── */
   .enemy-img {
     transform-origin: bottom center;
+    transition: filter 0.3s ease;
+  }
+  .phase-1-enemy {
     animation: enemyBreathe 5s ease-in-out infinite;
     filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(60,40,15,0.4));
-    transition: filter 0.3s ease;
+  }
+  .phase-2-enemy {
+    animation: enemyBreathe 5s ease-in-out infinite, glitch2 2.5s infinite;
+    filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(160,40,15,0.6)) hue-rotate(15deg) contrast(1.1);
+  }
+  .phase-3-enemy {
+    animation: enemyBreathe 5s ease-in-out infinite, glitch3 1.2s infinite;
+    filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(200,40,200,0.8)) hue-rotate(45deg) contrast(1.3) invert(0.05);
+  }
+
+  @keyframes glitch2 {
+    0%, 94%, 100% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(160,40,15,0.6)) hue-rotate(15deg) contrast(1.1); }
+    95% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(255,0,0,0.8)) hue-rotate(90deg) contrast(1.5); transform: translateX(-3px); }
+    97% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(0,255,0,0.8)) hue-rotate(-45deg) contrast(1.2); transform: translateX(3px); }
+  }
+  @keyframes glitch3 {
+    0%, 88%, 100% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(200,40,200,0.8)) hue-rotate(45deg) contrast(1.3) invert(0.05); opacity: 1; }
+    89% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(0,255,255,1)) hue-rotate(180deg) contrast(2) invert(0.2); transform: translateX(-5px) scale(1.02); opacity: 0.8; }
+    92% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(255,0,255,1)) hue-rotate(-90deg) contrast(1.8) invert(0.1); transform: translateX(5px) scale(0.98); opacity: 0.9; }
+    95% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(255,255,0,1)) hue-rotate(90deg) contrast(1.5); transform: translateX(-2px); opacity: 0.7; }
   }
   .enemy-shadow {
     position: absolute; bottom: 12px;
@@ -902,7 +924,7 @@ export default function BattleScreen({ player, enemyData, onVictory, onDefeat, o
         {/* Enemy */}
         <div style={{ position:'relative', display:'flex', alignItems:'flex-end', justifyContent:'center', height:'100%', paddingBottom:18, animation: shake ? 'shakeX 0.4s ease' : undefined }}>
           <img
-            className="enemy-img"
+            className={`enemy-img phase-${phase}-enemy`}
             src={act1EnemyImg}
             alt="The Governor — Archival Construct"
             style={{ height:'88%', maxHeight:640, width:'auto', objectFit:'contain' }}

@@ -138,49 +138,49 @@ const MAP_DATA = [
 
 /* ─── Items ──────────────────────────────────────────────────────── */
 const ITEM_TYPES = {
-  franc:   { icon: "🪙", name: "Imperial Thaler",      type: "gold"    },
-  tonic:   { icon: "🧪", name: "Amber Memory Vial",    type: "heal"    },
-  tome:    { icon: "📕", name: "Imperial Tome",         type: "trinket" },
-  seal:    { icon: "🔮", name: "Imperial Seal",         type: "trinket" },
-  score:   { icon: "🎼", name: "Music Manuscript",      type: "trinket" },
-  cipher:  { icon: "🗝️",  name: "Cipher Fragment",      type: "trinket" },
+  franc: { icon: "🪙", name: "Imperial Thaler", type: "gold" },
+  tonic: { icon: "🧪", name: "Amber Memory Vial", type: "heal" },
+  tome: { icon: "📕", name: "Imperial Tome", type: "trinket" },
+  seal: { icon: "🔮", name: "Imperial Seal", type: "trinket" },
+  score: { icon: "🎼", name: "Music Manuscript", type: "trinket" },
+  cipher: { icon: "🗝️", name: "Cipher Fragment", type: "trinket" },
 };
 
 const INIT_ITEMS = [
-  { col: 2,  row: 1,  kind: "franc"  },
-  { col: 15, row: 1,  kind: "franc"  },
-  { col: 2,  row: 5,  kind: "tonic"  },
-  { col: 26, row: 5,  kind: "franc"  },
-  { col: 2,  row: 7,  kind: "tome"   },
-  { col: 26, row: 7,  kind: "seal"   },
-  { col: 12, row: 8,  kind: "franc"  },
-  { col: 17, row: 8,  kind: "franc"  },
-  { col: 2,  row: 13, kind: "score"  },
+  { col: 2, row: 1, kind: "franc" },
+  { col: 15, row: 1, kind: "franc" },
+  { col: 2, row: 5, kind: "tonic" },
+  { col: 26, row: 5, kind: "franc" },
+  { col: 2, row: 7, kind: "tome" },
+  { col: 26, row: 7, kind: "seal" },
+  { col: 12, row: 8, kind: "franc" },
+  { col: 17, row: 8, kind: "franc" },
+  { col: 2, row: 13, kind: "score" },
   { col: 26, row: 13, kind: "cipher" },
-  { col: 12, row: 14, kind: "tonic"  },
-  { col: 17, row: 14, kind: "franc"  },
-  { col: 2,  row: 17, kind: "franc"  },
-  { col: 26, row: 17, kind: "tonic"  },
-  { col: 15, row: 20, kind: "franc"  },
-  { col: 2,  row: 20, kind: "seal"   },
+  { col: 12, row: 14, kind: "tonic" },
+  { col: 17, row: 14, kind: "franc" },
+  { col: 2, row: 17, kind: "franc" },
+  { col: 26, row: 17, kind: "tonic" },
+  { col: 15, row: 20, kind: "franc" },
+  { col: 2, row: 20, kind: "seal" },
 ].map(it => ({ ...it, collected: false }));
 
 /* ─── Phantom sentinels ──────────────────────────────────────────── */
 const INIT_SENTINELS = [
-  { col: 5,  row: 5,  kind: "patrol" },
-  { col: 24, row: 5,  kind: "patrol" },
-  { col: 5,  row: 17, kind: "patrol" },
+  { col: 5, row: 5, kind: "patrol" },
+  { col: 24, row: 5, kind: "patrol" },
+  { col: 5, row: 17, kind: "patrol" },
   { col: 24, row: 17, kind: "patrol" },
-  { col: 2,  row: 11, kind: "hunt"   }, // always hunts
-  { col: 27, row: 11, kind: "hunt"   },
+  { col: 2, row: 11, kind: "hunt" }, // always hunts
+  { col: 27, row: 11, kind: "hunt" },
 ].map(s => ({ ...s, x: s.col * TILE, y: s.row * TILE, timer: Math.random() * 600 }));
 
 /* ─── Lamp positions ─────────────────────────────────────────────── */
 const LAMP_POSITIONS = [
-  [4, 1],[14, 1],[25, 1],
-  [4, 5],[14, 5],[25, 5],
-  [4, 17],[14, 17],[25, 17],
-  [4, 20],[14, 20],[25, 20],
+  [4, 1], [14, 1], [25, 1],
+  [4, 5], [14, 5], [25, 5],
+  [4, 17], [14, 17], [25, 17],
+  [4, 20], [14, 20], [25, 20],
 ];
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
@@ -198,12 +198,12 @@ function isPoison(ch) { return ch === '~'; }
 ═══════════════════════════════════════════════════════════════════ */
 export default function RpgVienna({ player, onComplete }) {
   const canvasRef = useRef(null);
-  const toastRef  = useRef(null);
+  const toastRef = useRef(null);
 
-  const [localHp,    setLocalHp]    = useState(player?.hp ?? 55);
-  const [localInv,   setLocalInv]   = useState([]);
-  const [localGold,  setLocalGold]  = useState(0);
-  const [danger,     setDanger]     = useState(0);
+  const [localHp, setLocalHp] = useState(player?.hp ?? 55);
+  const [localInv, setLocalInv] = useState([]);
+  const [localGold, setLocalGold] = useState(0);
+  const [danger, setDanger] = useState(0);
   const [poisonFlash, setPoisonFlash] = useState(false);
 
   const maxHp = player?.maxHp ?? 100;
@@ -214,6 +214,7 @@ export default function RpgVienna({ player, onComplete }) {
     gold: 0,
     inv: [],
     danger: 0,
+    respawns: 0,
     items: JSON.parse(JSON.stringify(INIT_ITEMS)),
     sentinels: JSON.parse(JSON.stringify(INIT_SENTINELS)),
     gameWon: false,
@@ -255,7 +256,7 @@ export default function RpgVienna({ player, onComplete }) {
   useEffect(() => {
     const kd = (e) => {
       keysRef.current[e.key.toLowerCase()] = true;
-      if (["arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase()))
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase()))
         e.preventDefault();
     };
     const ku = (e) => { keysRef.current[e.key.toLowerCase()] = false; };
@@ -561,10 +562,10 @@ export default function RpgVienna({ player, onComplete }) {
 
     const desiredDir = () => {
       const k = keysRef.current;
-      if (k['arrowup']    || k['w']) return [0, -1];
-      if (k['arrowdown']  || k['s']) return [0,  1];
-      if (k['arrowleft']  || k['a']) return [-1, 0];
-      if (k['arrowright'] || k['d']) return [1,  0];
+      if (k['arrowup'] || k['w']) return [0, -1];
+      if (k['arrowdown'] || k['s']) return [0, 1];
+      if (k['arrowleft'] || k['a']) return [-1, 0];
+      if (k['arrowright'] || k['d']) return [1, 0];
       return null;
     };
 
@@ -596,7 +597,19 @@ export default function RpgVienna({ player, onComplete }) {
       state.hp = Math.max(0, state.hp - 12);
       state.poisonInvincible = now + 700;
       state.poisonFlashUntil = now + 250;
-      showToast('Corrupted data node! (−12 HP)');
+      if (state.hp <= 0) {
+        state.respawns += 1;
+        state.hp = player?.maxHp ?? 100;
+        state.player.col = 1; state.player.row = 1;
+        state.player.x = TILE; state.player.y = TILE;
+        state.player.targetCol = 1; state.player.targetRow = 1;
+        state.player.moving = false;
+        state.danger = Math.max(0, state.danger - 30);
+        state.invincibleUntil = now + 2200;
+        showToast(`Poisoned! Respawning… (×${state.respawns})`);
+      } else {
+        showToast('Corrupted data node! (−12 HP)');
+      }
       setLocalHp(state.hp);
       setPoisonFlash(true);
       setTimeout(() => setPoisonFlash(false), 260);
@@ -612,14 +625,14 @@ export default function RpgVienna({ player, onComplete }) {
 
         const dist = Math.hypot(playerX - s.x, playerY - s.y);
         const chase = dist < TILE * 4.5;
-        const dirs = [[0, -1],[0, 1],[-1, 0],[1, 0]];
+        const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
 
         if ((chase && Math.random() < 0.72) || s.kind === 'hunt') {
           // Move toward player
           const dx = playerX - s.x, dy = playerY - s.y;
           const preferred = Math.abs(dx) > Math.abs(dy)
-            ? [[Math.sign(dx), 0],[0, Math.sign(dy)],[-Math.sign(dx), 0],[0, -Math.sign(dy)]]
-            : [[0, Math.sign(dy)],[Math.sign(dx), 0],[0, -Math.sign(dy)],[-Math.sign(dx), 0]];
+            ? [[Math.sign(dx), 0], [0, Math.sign(dy)], [-Math.sign(dx), 0], [0, -Math.sign(dy)]]
+            : [[0, Math.sign(dy)], [Math.sign(dx), 0], [0, -Math.sign(dy)], [-Math.sign(dx), 0]];
           for (const [dc, dr] of preferred) {
             const nc = s.col + dc, nr = s.row + dr;
             const ch = tileAt(nc, nr);
@@ -654,7 +667,19 @@ export default function RpgVienna({ player, onComplete }) {
           state.hp = Math.max(0, state.hp - 18);
           state.danger = Math.min(100, state.danger + 28);
           state.invincibleUntil = now + 1100;
-          showToast('Phantom sentinel! (−18 HP)');
+          if (state.hp <= 0) {
+            state.respawns += 1;
+            state.hp = player?.maxHp ?? 100;
+            state.player.col = 1; state.player.row = 1;
+            state.player.x = TILE; state.player.y = TILE;
+            state.player.targetCol = 1; state.player.targetRow = 1;
+            state.player.moving = false;
+            state.danger = Math.max(0, state.danger - 30);
+            state.invincibleUntil = now + 2200;
+            showToast(`Caught! Respawning… (×${state.respawns})`);
+          } else {
+            showToast('Phantom sentinel! (−18 HP)');
+          }
           setLocalHp(state.hp);
           setDanger(state.danger);
           break;
@@ -723,7 +748,7 @@ export default function RpgVienna({ player, onComplete }) {
           if (row < 0 || row >= MAP_ROWS || col < 0 || col >= MAP_COLS) continue;
           const px = col * TILE - camX, py = row * TILE - camY;
           const ch = tileAt(col, row);
-          if      (ch === '#') drawImperialWall(px, py, col, row);
+          if (ch === '#') drawImperialWall(px, py, col, row);
           else if (ch === '~') drawPoison(px, py, now);
           else if (ch === 'G') drawGrandHall(px, py, col, row);
           else if (ch === 'V') drawArchive(px, py, col, row);
@@ -779,7 +804,7 @@ export default function RpgVienna({ player, onComplete }) {
       <style>{TOWN_CSS}</style>
       <div className="vienna-header">
         <h1>Vienna, Austria</h1>
-        <p>1888 — traverse the Imperial Archive and reach the gate</p>
+        <p>reach the Imperial Archive</p>
       </div>
 
       <div className="vienna-wrap">

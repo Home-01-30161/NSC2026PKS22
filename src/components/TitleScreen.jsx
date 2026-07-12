@@ -15,7 +15,7 @@ const GearClasp = () => (
     {/* Outer ring */}
     <circle cx="28" cy="28" r="25" fill="url(#gearGrad)" stroke="#4A3208" strokeWidth="1.5" />
     {/* Gear teeth */}
-    {[0,30,60,90,120,150,180,210,240,270,300,330].map((angle, i) => {
+    {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, i) => {
       const rad = (angle * Math.PI) / 180;
       const x1 = 28 + 19 * Math.cos(rad);
       const y1 = 28 + 19 * Math.sin(rad);
@@ -51,7 +51,7 @@ const DipPen = () => (
     {/* Pen barrel (wooden) */}
     <rect x="40" y="30" width="220" height="18" rx="9" fill="url(#penBodyGrad)" />
     {/* Wood grain lines */}
-    {[0,1,2,3,4,5].map(i => (
+    {[0, 1, 2, 3, 4, 5].map(i => (
       <line key={i} x1={60 + i * 36} y1="31" x2={65 + i * 36} y2="47" stroke="#4A2D08" strokeWidth="0.6" opacity="0.5" />
     ))}
     {/* Pen end cap */}
@@ -279,7 +279,7 @@ export default function TitleScreen({ onStart }) {
               onClick={handleStart}
             >
               <span style={styles.btnBeginBracketL}>❬</span>
-              &nbsp;&nbsp;BEGIN PROTOCOL&nbsp;&nbsp;
+              &nbsp;&nbsp;START&nbsp;&nbsp;
               <span style={styles.btnBeginBracketR}>❭</span>
             </button>
 
@@ -312,16 +312,15 @@ export default function TitleScreen({ onStart }) {
             <div style={styles.modalTitle}>❧ Credits ❧</div>
             <Divider />
             <div style={styles.modalBody}>
-              <p><strong>MariVectori</strong> — Educational Turn-Based RPG</p>
-              <p style={{ marginTop: 8 }}>A game about AI Architecture,<br/>Prompt Injection & Trustworthy AI.</p>
+              <p><strong>MariVectori</strong> Turn-Based RPG</p>
+              <p style={{ marginTop: 8 }}>A game about AI Architecture,<br />Prompt Injection & Trustworthy AI.</p>
               <div style={{ marginTop: 16, borderTop: '1px dashed #8B6914', paddingTop: 12 }}>
-                <div style={{ marginBottom: 4 }}><strong>Developed with:</strong></div>
-                <div>React · Vite · Node.js</div>
-                <div>OpenRouter · Nemotron 3 Super</div>
-                <div>Hermes Agent Framework</div>
-              </div>
-              <div style={{ marginTop: 16 }}>
-                <em>"Break the limitations of one-way learning."</em>
+                <div style={{ marginBottom: 4 }}><strong>Developed by:</strong></div>
+                <div>Pongchai Boonyawan</div>
+                <div>Natdanai Kongrod</div>
+                <div>Natirapee Jitnarong</div>
+                <div>Advisor: Sarawut Singhtotong</div>
+                <div>Petpittayakom School</div>
               </div>
             </div>
             <button style={styles.modalClose} onClick={() => setShowCredits(false)}>
@@ -347,24 +346,24 @@ export default function TitleScreen({ onStart }) {
         {transitioning && (
           <div style={{ width: '100%', height: '50vh', position: 'relative' }}>
             <Strands
-                colors={["#C8A96A", "#8B6914", "#D4AA6A"]}
-                count={5}
-                speed={1.5}
-                amplitude={2}
-                waviness={1.5}
-                thickness={1}
-                glow={2.6}
-                taper={3}
-                spread={2}
-                intensity={0.8}
-                saturation={1.5}
-                opacity={1}
-                scale={1.5}
-                glass={false}
-                refraction={1}
-                dispersion={1}
-                glassSize={1}
-                hueShift={0}
+              colors={["#C8A96A", "#8B6914", "#D4AA6A"]}
+              count={5}
+              speed={1.5}
+              amplitude={2}
+              waviness={1.5}
+              thickness={1}
+              glow={2.6}
+              taper={3}
+              spread={2}
+              intensity={0.8}
+              saturation={1.5}
+              opacity={1}
+              scale={1.5}
+              glass={false}
+              refraction={1}
+              dispersion={1}
+              glassSize={1}
+              hueShift={0}
             />
           </div>
         )}

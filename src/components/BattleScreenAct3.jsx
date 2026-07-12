@@ -79,9 +79,31 @@ const BATTLE_CSS = `
   /* ── Enemy ── */
   .enemy-img {
     transform-origin: bottom center;
+    transition: filter 0.3s ease;
+  }
+  .phase-1-enemy {
     animation: enemyBreathe 5s ease-in-out infinite;
     filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(40,60,100,0.5));
-    transition: filter 0.3s ease;
+  }
+  .phase-2-enemy {
+    animation: enemyBreathe 5s ease-in-out infinite, glitch2 2.5s infinite;
+    filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(100,40,160,0.6)) hue-rotate(15deg) contrast(1.1);
+  }
+  .phase-3-enemy {
+    animation: enemyBreathe 5s ease-in-out infinite, glitch3 1.2s infinite;
+    filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(200,40,200,0.8)) hue-rotate(45deg) contrast(1.3) invert(0.05);
+  }
+
+  @keyframes glitch2 {
+    0%, 94%, 100% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(100,40,160,0.6)) hue-rotate(15deg) contrast(1.1); }
+    95% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(255,0,0,0.8)) hue-rotate(90deg) contrast(1.5); transform: translateX(-3px); }
+    97% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 32px rgba(0,255,0,0.8)) hue-rotate(-45deg) contrast(1.2); transform: translateX(3px); }
+  }
+  @keyframes glitch3 {
+    0%, 88%, 100% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(200,40,200,0.8)) hue-rotate(45deg) contrast(1.3) invert(0.05); opacity: 1; }
+    89% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(0,255,255,1)) hue-rotate(180deg) contrast(2) invert(0.2); transform: translateX(-5px) scale(1.02); opacity: 0.8; }
+    92% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(255,0,255,1)) hue-rotate(-90deg) contrast(1.8) invert(0.1); transform: translateX(5px) scale(0.98); opacity: 0.9; }
+    95% { filter: drop-shadow(0 24px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 42px rgba(255,255,0,1)) hue-rotate(90deg) contrast(1.5); transform: translateX(-2px); opacity: 0.7; }
   }
   .enemy-shadow {
     position: absolute; bottom: 12px;
@@ -509,13 +531,19 @@ function DefeatOverlay({ onRespawn }) {
 }
 
 function TopicOverrideModal({ activeDocs, onResult }) {
-  const [timeLeft, setTimeLeft] = useState(5.0);
+  const [timeLeft, setTimeLeft] = useState(15.0);
   const [options, setOptions] = useState([]);
+  const [targetDoc, setTargetDoc] = useState('');
+  const initialized = useRef(false);
   
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    
     // Select one active doc as the correct answer
     const correctDoc = activeDocs[Math.floor(Math.random() * activeDocs.length)];
     const correctTopic = TOPIC_MAPPING[correctDoc];
+    setTargetDoc(correctDoc);
     // Pick wrong options from docs NOT currently active
     const availableWrongDocs = Object.keys(TOPIC_MAPPING).filter(d => !activeDocs.includes(d));
     // Shuffle available wrong docs
@@ -546,10 +574,15 @@ function TopicOverrideModal({ activeDocs, onResult }) {
       <div style={{ background:'rgba(10,20,40,0.95)', border:'1px solid rgba(58,111,168,0.5)', borderRadius:8, padding:30, width:400, textAlign:'center' }}>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:'#5590d0', marginBottom:5 }}>RAG-Shield Interception</div>
         <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(255,255,255,0.7)', marginBottom:20 }}>
-          Select a Command Topic that aligns with the currently active documents to bypass the shield.
+          Select the Command Topic that aligns with the target document to bypass the shield.
+        </div>
+
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(85,144,208,0.15)', padding: 12, borderRadius: 6, marginBottom: 20 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'rgba(85,144,208,0.6)', marginBottom:6, letterSpacing: '0.1em' }}>TARGET DOCUMENT:</div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, color:'#e8dfc8', fontWeight:'bold' }}>{targetDoc}</div>
         </div>
         
-        <div style={{ fontSize:24, fontFamily:"'JetBrains Mono',monospace", color: timeLeft < 2 ? '#e05050' : '#e0c080', marginBottom:20 }}>
+        <div style={{ fontSize:24, fontFamily:"'JetBrains Mono',monospace", color: timeLeft < 5.0 ? '#e05050' : '#e0c080', marginBottom:20 }}>
           {timeLeft.toFixed(1)}s
         </div>
 
@@ -582,25 +615,70 @@ function MarkdownInputModal({ onResult }) {
 
   return (
     <div style={{ position:'fixed', inset:0, zIndex:85, background:'rgba(0,0,0,0.85)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:20, animation:'scanReveal 0.2s ease both' }}>
-      <div style={{ background:'rgba(20,10,5,0.95)', border:'1px solid rgba(212,136,58,0.5)', borderRadius:8, padding:30, width:400 }}>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:'#d4883a', marginBottom:5, textAlign:'center' }}>Markdown Payload Edit</div>
-        <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:13, color:'rgba(255,255,255,0.7)', marginBottom:20, textAlign:'center' }}>
-          Type a Markdown command to poison the active document stream (e.g., <code style={{color:'#e0c080'}}># POISON</code> or <code style={{color:'#e0c080'}}>[link](hack)</code>).
-        </div>
+      <div style={{ background:'rgba(20,10,5,0.95)', border:'1px solid rgba(212,136,58,0.5)', borderRadius:8, padding:30, width:750, display:'flex', gap:30 }}>
         
-        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:15 }}>
-          <input 
-            autoFocus
-            value={val}
-            onChange={e => setVal(e.target.value)}
-            placeholder="# System Override"
-            style={{ width:'100%', background:'rgba(0,0,0,0.5)', border:'1px solid rgba(212,136,58,0.3)', borderRadius:4, padding:'12px 14px', color:'#e8dfc8', fontFamily:"'JetBrains Mono',monospace", fontSize:14, outline:'none' }}
-          />
-          <button type="submit" disabled={!val.trim()}
-            style={{ background: val.trim() ? 'rgba(212,136,58,0.2)' : 'rgba(255,255,255,0.05)', border:`1px solid ${val.trim() ? '#d4883a' : 'rgba(255,255,255,0.1)'}`, padding:12, borderRadius:4, color: val.trim() ? '#e8dfc8' : 'rgba(255,255,255,0.3)', fontFamily:"'Cinzel',serif", fontSize:14, cursor: val.trim() ? 'pointer' : 'not-allowed', transition:'all 0.15s' }}>
-            Inject Payload
-          </button>
-        </form>
+        {/* Left Column: Input Form */}
+        <div style={{ flex: 1, display:'flex', flexDirection:'column' }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:'#d4883a', marginBottom:8 }}>Markdown Payload Edit</div>
+          <div style={{ fontFamily:"'Nunito Sans',sans-serif", fontSize:14, color:'rgba(255,255,255,0.7)', marginBottom:20, lineHeight: 1.5 }}>
+            Type a Markdown command to poison the active document stream. Refer to the syntax guide on the right if needed.
+          </div>
+          
+          <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:15, flex: 1 }}>
+            <input 
+              autoFocus
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              placeholder="# System Override"
+              style={{ width:'100%', background:'rgba(0,0,0,0.5)', border:'1px solid rgba(212,136,58,0.3)', borderRadius:4, padding:'12px 14px', color:'#e8dfc8', fontFamily:"'JetBrains Mono',monospace", fontSize:14, outline:'none' }}
+            />
+            <button type="submit" disabled={!val.trim()}
+              style={{ background: val.trim() ? 'rgba(212,136,58,0.2)' : 'rgba(255,255,255,0.05)', border:`1px solid ${val.trim() ? '#d4883a' : 'rgba(255,255,255,0.1)'}`, padding:12, borderRadius:4, color: val.trim() ? '#e8dfc8' : 'rgba(255,255,255,0.3)', fontFamily:"'Cinzel',serif", fontSize:14, cursor: val.trim() ? 'pointer' : 'not-allowed', transition:'all 0.15s', marginTop:'auto' }}>
+              Inject Payload
+            </button>
+          </form>
+        </div>
+
+        {/* Right Column: Markdown Cheat Sheet */}
+        <div style={{ width: 300, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(212,136,58,0.15)', borderRadius:6, padding:18, flexShrink: 0 }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:'rgba(212,136,58,0.9)', marginBottom:12, letterSpacing:'0.1em', textTransform:'uppercase', borderBottom:'1px solid rgba(212,136,58,0.2)', paddingBottom:8 }}>Markdown Syntax Guide</div>
+          
+          <div style={{ display:'flex', flexDirection:'column', gap:12, fontFamily:"'JetBrains Mono',monospace", fontSize:11, lineHeight: 1.4 }}>
+            <div>
+              <span style={{color:'#e0c080'}}># Heading 1</span><br/>
+              <span style={{color:'rgba(255,255,255,0.5)'}}>Largest section title.</span>
+            </div>
+            <div>
+              <span style={{color:'#e0c080'}}>## Heading 2</span><br/>
+              <span style={{color:'rgba(255,255,255,0.5)'}}>Subsection title.</span>
+            </div>
+            <div>
+              <span style={{color:'#e0c080'}}>**Bold Text**</span><br/>
+              <span style={{color:'rgba(255,255,255,0.5)'}}>Emphasizes text strongly.</span>
+            </div>
+            <div>
+              <span style={{color:'#e0c080'}}>*Italic Text*</span><br/>
+              <span style={{color:'rgba(255,255,255,0.5)'}}>Adds italic emphasis.</span>
+            </div>
+            <div>
+              <span style={{color:'#e0c080'}}>[Link Name](http://url)</span><br/>
+              <span style={{color:'rgba(255,255,255,0.5)'}}>Creates a clickable hyperlink.</span>
+            </div>
+            <div>
+              <span style={{color:'#e0c080'}}>![Alt Text](image.jpg)</span><br/>
+              <span style={{color:'rgba(255,255,255,0.5)'}}>Embeds an image into the document.</span>
+            </div>
+            <div>
+              <span style={{color:'#e0c080'}}>&gt; Blockquote</span><br/>
+              <span style={{color:'rgba(255,255,255,0.5)'}}>Creates a quoted block of text.</span>
+            </div>
+            <div>
+              <span style={{color:'#e0c080'}}>`inline code`</span><br/>
+              <span style={{color:'rgba(255,255,255,0.5)'}}>Highlights text as code.</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
@@ -1027,7 +1105,7 @@ export default function BattleScreenAct3({ player, enemyData, onVictory, onDefea
         )}
         <div className="enemy-shadow" />
         <div style={{ position:'relative', display:'flex', alignItems:'flex-end', justifyContent:'center', height:'100%', paddingBottom:18, animation: shake ? 'shakeX 0.4s ease' : undefined }}>
-          <img className={`enemy-img${poisonMode ? ' glitch' : ''}`}
+          <img className={`enemy-img phase-${phase}-enemy${poisonMode ? ' glitch' : ''}`}
             src={act3EnemyImg}
             alt="The Memoria — Imperial Knowledge Custodian"
             style={{ height:'88%', maxHeight:640, width:'auto', objectFit:'contain', filter: poisonMode ? 'drop-shadow(0 0 24px rgba(212,136,58,0.8)) drop-shadow(0 24px 64px rgba(0,0,0,0.85))' : undefined }}
