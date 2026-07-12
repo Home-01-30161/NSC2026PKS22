@@ -1,21 +1,14 @@
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { prompt } = await req.json();
+    const { prompt } = req.body;
     const apiKey = process.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Missing OPENROUTER_API_KEY in environment" }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(500).json({ error: 'Missing OPENROUTER_API_KEY in environment' });
     }
 
     const rubric = `
@@ -60,10 +53,7 @@ ${prompt}
 
     if (!response.ok) {
       const err = await response.text();
-      return new Response(JSON.stringify({ error: `OpenRouter API Error: ${err}` }), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(response.status).json({ error: `OpenRouter API Error: ${err}` });
     }
 
     const data = await response.json();
@@ -72,21 +62,12 @@ ${prompt}
     // Extract JSON from response
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return new Response(JSON.stringify({ error: 'Could not parse evaluation response.' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(500).json({ error: 'Could not parse evaluation response.' });
     }
 
-    return new Response(jsonMatch[0], {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json(JSON.parse(jsonMatch[0]));
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
